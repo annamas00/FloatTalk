@@ -18,8 +18,10 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5174","http://localhost:5173" ],  # frontend dev server, change if needed
-    allow_origin_regex="https?://.*",  # allow all origins for CORS
+    allow_origins=[
+    "http://localhost:5174","http://localhost:5173",
+    "https://annamas00.github.io" 
+],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -131,10 +133,9 @@ async def read_me(current_user_email: str = Depends(get_current_user)):
         "user_id": user["user_id"]
     }
 
-
-
-
-
+@app.get("/")
+def read_root():
+    return {"status": "ok"}
 # ------------------ App Logic ------------------
 
 @app.get("/auth/anon")
