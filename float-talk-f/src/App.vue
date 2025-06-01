@@ -1,10 +1,10 @@
-<template>
+<template> 
   <div class="grid-container">
-    <!-- Map -->
+  
     <div class="map-container" id="map"></div>
-<!-- Sidebar -->
+
 <div class="sidebar">
-  <!-- Vertically centered button block -->
+
   <div class="flex-1 flex flex-col items-center justify-center space-y-4">
     <button @click="throwBottle" class="btn-action">
       <div class="btn-inner">
@@ -21,7 +21,6 @@
     </button>
   </div>
 
-  <!-- Profile icon -->
   <div class="flex justify-center pb-4">
     <button class="profile-btn" title="Profile">
       <UserCircle class="w-7 h-7" />
@@ -31,7 +30,9 @@
 
 
   </div>
-</template>
+</template>  
+
+
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue';
@@ -44,6 +45,10 @@ import markerIcon2x from './assets/leaflet/marker-icon-2x.png';
 import markerIcon from './assets/leaflet/marker-icon.png';
 import markerShadow from './assets/leaflet/marker-shadow.png';
 import { Send, BookOpen, UserCircle } from 'lucide-vue-next';
+import axios from 'axios'
+
+
+
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -83,13 +88,48 @@ onMounted(async () => {
   });
 });
 
-function throwBottle() {
+async function throwBottle() {
   logEvent("bottle_thrown", { tags: ["lonely", "sad"] });
+
+  try {
+  const res = await axios.post('http://127.0.0.1:8000/log', {
+    user_id: userId.value,
+    action: 'bottle_thrown',
+    details: {
+      tags: ['lonely', 'sad'],
+      time: new Date().toISOString()
+    }
+  });
+  console.log("✅ Erfolgreich geloggt:", res.data);
+  alert("📦 Bottle geworfen!");
+} catch (error) {
+  console.error("❌ Fehler beim Senden an die API:", error);
+  alert("❌ Fehler beim Werfen der Bottle");
+}
 }
 
-function readBottle() {
-  logEvent("bottle_read", { bottleId: "abc123" });
+
+
+async function readBottle() {
+  try {
+    const response = await axios.post('http://127.0.0.1:8000/log', {
+      user_id: userId.value,
+      action: 'bottle_read',
+      details: {
+        bottleId: "abc123", // Du kannst das später dynamisch machen
+        time: new Date().toISOString()
+      }
+    });
+
+    console.log("📖 Read bottle logged:", response.data);
+    alert("📖 Bottle gelesen!");
+  } catch (error) {
+    console.error("❌ Fehler beim Logging (readBottle):", error);
+    alert("❌ Fehler beim Lesen der Bottle");
+  }
 }
+
+
 </script>
 
 <style>
@@ -101,6 +141,8 @@ body,
   height: 100%;
   width: 100%;
 }
+
+
 
 /* Grid layout with 2 columns: map + sidebar */
 .grid-container {
