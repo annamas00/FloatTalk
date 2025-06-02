@@ -13,19 +13,32 @@
       </div>
     </button>
 
-    <button @click="readBottle" class="btn-action">
+   <button @click="readBottle" class="btn-action">
       <div class="btn-inner">
         <BookOpen class="w-5 h-5" />
         <span>Read Past Bottles</span>
       </div>
     </button>
+
+    
   </div>
+
+ <button @click="privateChat" class="btn-action">
+      <div class="btn-inner">
+        <MessageSquareText class="w-5 h-5" />
+        <span>Chat</span>
+      </div>
+    </button>
 
   <div class="flex justify-center pb-4">
     <button class="profile-btn" title="Profile">
       <UserCircle class="w-7 h-7" />
     </button>
   </div>
+
+
+
+
 </div>
 
 
@@ -44,7 +57,7 @@ import { dummyBottles } from './data/dummyBottles.js';
 import markerIcon2x from './assets/leaflet/marker-icon-2x.png';
 import markerIcon from './assets/leaflet/marker-icon.png';
 import markerShadow from './assets/leaflet/marker-shadow.png';
-import { Send, BookOpen, UserCircle } from 'lucide-vue-next';
+import { Send, BookOpen, UserCircle, MessageSquareText } from 'lucide-vue-next';
 import axios from 'axios'
 
 
@@ -92,6 +105,14 @@ async function throwBottle() {
   logEvent("bottle_thrown", { tags: ["lonely", "sad"] });
 
   try {
+const userMessage = prompt("📨 Write anything you want");
+
+    if (!userMessage) {
+      alert("⚠️No message");
+      return;
+    }
+
+
   const res = await axios.post('http://127.0.0.1:8000/log', {
     user_id: userId.value,
     action: 'bottle_thrown',
