@@ -159,6 +159,28 @@ async def log_event(entry: LogEntry):
     print("📦 Mongo Insert Result:", result.inserted_id)
     return {"status": "logged"}
 
+from fastapi.responses import JSONResponse
+from datetime import datetime
+
+@app.get("/bottles")
+async def get_valid_bottles():
+    now = datetime.utcnow().isoformat()
+    cursor = db.logs.find({
+        "action": "bottle_thrown",
+        "details.duration_until": { "$gt": now }
+    })
+
+    bottles = []
+    async for doc in cursor:
+        bottles.append({
+            "title": doc["action"],
+            "message": doc["details"].get("tags", []),
+            "location": doc["details"].get("location", {}),
+            "time": doc["details"].get("time"),
+            "duration_until": doc["details"].get("duration_until")
+        })
+
+    return JSONResponse(content=bottles)
 
 # -- Startseite --
 @app.get("/")

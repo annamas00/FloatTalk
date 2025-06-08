@@ -1,17 +1,15 @@
-<template> 
-  <div class="grid-container">
-  
-    <div class="map-container" id="map"></div>
-
-<div class="sidebar">
+<template>
+  <RouterView v-slot="{ Component }">
+    <component :is="Component" />
+  </RouterView>
 
   <div class="flex-1 flex flex-col items-center justify-center space-y-4">
-    <button @click="throwBottle" class="btn-action">
-      <div class="btn-inner">
-        <Send class="w-5 h-5" />
-        <span>Throw a Bottle</span>
-      </div>
-    </button>
+    <router-link to="/throw" class="btn-action">
+  <div class="btn-inner">
+    <Send class="w-5 h-5" />
+    <span>Throw a Bottle</span>
+  </div>
+</router-link>
 
     <button @click="readBottle" class="btn-action">
       <div class="btn-inner">
@@ -22,16 +20,11 @@
   </div>
 
   <div class="flex justify-center pb-4">
-    <button class="profile-btn" title="Profile">
-      <UserCircle class="w-7 h-7" />
-    </button>
-  </div>
+  <router-link to="/login" class="profile-btn" title="Profile">
+    <UserCircle class="w-7 h-7" />
+  </router-link>
 </div>
-
-
-  </div>
-</template>  
-
+</template>
 
 
 <script setup>
@@ -46,7 +39,6 @@ import markerIcon from './assets/leaflet/marker-icon.png';
 import markerShadow from './assets/leaflet/marker-shadow.png';
 import { Send, BookOpen, UserCircle } from 'lucide-vue-next';
 import axios from 'axios'
-
 
 
 
@@ -89,42 +81,63 @@ onMounted(async () => {
 });
 
 async function throwBottle() {
+  console.log("🌍 Versuche Standort zu ermitteln...");
+
   logEvent("bottle_thrown", { tags: ["lonely", "sad"] });
 
-  try {
-  const res = await axios.post('http://127.0.0.1:8000/log', {
-    user_id: userId.value,
-    action: 'bottle_thrown',
-    details: {
-      tags: ['lonely', 'sad'],
-      time: new Date().toISOString()
-    }
-  });
-  console.log("✅ Erfolgreich geloggt:", res.data);
-  alert("📦 Bottle geworfen!");
-} catch (error) {
-  console.error("❌ Fehler beim Senden an die API:", error);
-  alert("❌ Fehler beim Werfen der Bottle");
-}
-}
 
+  try {
+    // Hole den Standort per Browser-API
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const location = {
+        lat: position.coords.latitude,
+        lon: position.coords.longitude
+      };
+
+      const now = new Date();
+      const durationEnd = new Date(now.getTime() + 24 * 60 * 60 * 1000); // +24h
+
+      const res = await axios.post('http://127.0.0.1:8000/log', {
+        user_id: userId.value,
+        action: 'bottle_thrown',
+        details: {
+          tags: ['lonely', 'sad'],
+          time: now.toISOString(),
+          duration_until: durationEnd.toISOString(),
+          location: location
+        }
+      });
+
+      console.log("✅ Erfolgreich geloggt:", res.data);
+      alert("📦 Bottle geworfen!");
+    }, (error) => {
+      console.error("❌ Standort konnte nicht ermittelt werden:", error);
+      alert("❌ Bitte Standortfreigabe aktivieren, um eine Bottle zu werfen.");
+    });
+
+  } catch (error) {
+    console.error("❌ Fehler beim Senden an die API:", error);
+    alert("❌ Fehler beim Werfen der Bottle");
+  }
+}
 
 
 async function readBottle() {
-  try {
-    const response = await axios.post('http://127.0.0.1:8000/log', {
-      user_id: userId.value,
-      action: 'bottle_read',
-      details: {
-        bottleId: "abc123", // Du kannst das später dynamisch machen
-        time: new Date().toISOString()
-      }
-    });
+  logEvent("bottle_read", {});
 
-    console.log("📖 Read bottle logged:", response.data);
-    alert("📖 Bottle gelesen!");
+  try {
+    const response = await axios.get('http://127.0.0.1:8000/bottles');
+    const bottles = response.data;
+
+    if (bottles.length === 0) {
+      alert("😢 Keine aktiven Bottles gefunden.");
+      return;
+    }
+
+    const randomBottle = bottles[Math.floor(Math.random() * bottles.length)];
+    alert(`📖 Bottle gelesen:\n\nTags: ${randomBottle.message.join(", ")}\nStandort: ${randomBottle.location.lat}, ${randomBottle.location.lon}`);
   } catch (error) {
-    console.error("❌ Fehler beim Logging (readBottle):", error);
+    console.error("❌ Fehler beim Laden der Bottles:", error);
     alert("❌ Fehler beim Lesen der Bottle");
   }
 }
@@ -141,7 +154,6 @@ body,
   height: 100%;
   width: 100%;
 }
-
 
 
 /* Grid layout with 2 columns: map + sidebar */
@@ -182,3 +194,5 @@ body,
 }
 
 </style>
+
+
