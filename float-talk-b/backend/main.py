@@ -78,6 +78,9 @@ class UserProfile(BaseModel):
     email: str
     user_id: str
 
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
 # ------------------ Utils ------------------
 
 def verify_password(plain, hashed):
@@ -97,7 +100,10 @@ def decode_token(token: str):
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     payload = decode_token(token)
-    return payload.get("sub")
+    email = payload.get("sub")
+    if email is None:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+    return email
 
 # ------------------ Auth Routes ------------------
 
