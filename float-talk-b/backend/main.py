@@ -210,8 +210,19 @@ async def add_bottle(req: Request):
     bottles.insert_one(bottle_doc)
     return {"status": "success", "message": "Bottle stored!"}
 
-
-
+@app.get("/my_bottles")
+async def get_my_bottles(user_id: str):
+    result = []
+    cursor = bottles.find({"sender_id": user_id}).sort("bottle_timestamp", -1)
+    async for doc in cursor:
+        result.append({
+            "bottle_id": doc.get("bottle_id"),
+            "content": doc.get("content"),
+            "tags": doc.get("tags", []),
+            "timestamp": doc.get("bottle_timestamp"),
+            "status": doc.get("status", "floating")
+        })
+    return {"bottles": result}
 
 
 

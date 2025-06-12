@@ -56,6 +56,52 @@
           </div>
         </div>
       </div>
+
+      <!-- Dropdown toggle button -->
+       
+        <div class="w-full mt-4">
+          <button @click="toggleDropdown" class="btn-action w-full flex justify-between items-center">
+            <span>My Bottles</span>
+            <span>{{ dropdownOpen ? '▲' : '▼' }}</span>
+          </button>
+
+          <div v-if="dropdownOpen" class="dropdown-list">
+              <div
+                v-for="(bottle, index) in myBottles"
+                :key="index"
+                class="dropdown-item"
+                @click="viewBottleDetail(bottle)"
+              >
+                {{ bottle.content.slice(0, 20) }}...
+              </div>
+            </div>
+
+        </div>
+
+
+        <!-- check my bottle -->
+          <div v-if="detailVisible" class="dialog-overlay">
+            <div class="dialog-box">
+              <div class="dialog-header">
+                <h2 class="dialog-title">📩 Bottle Detail</h2>
+                <button class="dialog-close" @click="closeDetailModal">×</button>
+              </div>
+              <div class="dialog-body">
+                <p class="dialog-content">
+                  {{ selectedBottle && selectedBottle.content }}
+                </p>
+
+                <div class="dialog-tags" v-if="selectedBottle && selectedBottle.tags">
+                  <span v-for="(tag, idx) in selectedBottle.tags" :key="idx" class="tag-chip">
+                    {{ tag }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+
+
     </div>
   </div>
 </template>
@@ -81,6 +127,27 @@ import {
   removeTag,
   handleTagKeydown
 } from './throwBottleLogic.js'
+
+import {
+  myBottles,
+  dropdownOpen,
+  toggleDropdown,
+  viewBottleDetail,
+  detailVisible,
+  selectedBottle,
+  closeDetailModal,
+  fetchMyBottles
+} from './myBottlesLogic.js'
+
+onMounted(() => {
+  fetchMyBottles()
+})
+
+
+function formatTimestamp(ts) {
+  if (!ts) return ''
+  return new Date(ts).toLocaleString()
+}
 
 let map
 let markers = []
@@ -255,24 +322,24 @@ button {
 }
 textarea.input {
   flex-grow: 1;
-  resize: vertical; /* 允许用户拖动 */
+  resize: vertical; 
   min-height: 100px;
 }
 
 .tag-input {
   width: 100%;
-  padding: 0.5rem;               /* 统一内边距 */
-  margin-bottom: 0.5rem;         /* 统一底部间隔 */
+  padding: 0.5rem;               
+  margin-bottom: 0.5rem;         
   border: 1px solid #ccc;
   border-radius: 0.5rem;
   background-color: #f9f9f9;
-  font-size: 1rem;               /* 与 .input 保持一致 */
+  font-size: 1rem;               
   box-sizing: border-box;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
-  min-height: 44px;              /* 手动设定统一高度（可选） */
+  min-height: 44px;              
 }
 
 
@@ -310,4 +377,137 @@ textarea.input {
 h3 {
   color: black;
 }
+
+
+.dropdown-list {
+  transition: all 0.2s ease-in-out;
+}
+
+.dropdown-item {
+  color: white;
+  font-size: 0.9rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-box {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  text-align: left;
+}
+
+.modal-title {
+  font-weight: bold;
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.modal-content {
+  margin-bottom: 1.5rem;
+}
+
+.modal-actions {
+  text-align: right;
+}
+.dialog-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog-box {
+  background-color: white;
+  border-radius: 1rem;
+  width: 90%;
+  max-width: 420px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  position: relative;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dialog-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.dialog-close {
+  font-size: 1.5rem;
+  font-weight: bold;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.dialog-body {
+  margin-top: 1rem;
+}
+
+.dialog-content {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.dialog-tags {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tag-chip {
+  background-color: #007bff;
+  color: white;
+  border-radius: 9999px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
+}
+.dialog-box,
+.dialog-title,
+.dialog-content,
+.dialog-tags,
+.dialog-tags .tag-chip {
+  color: black;
+}
+
+
+.dialog-tags .tag-chip {
+  background-color: #e5e7eb; 
+  color: #111827; 
+}
+
+
+.dropdown-item {
+  color: #f9fafb; 
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+}
+.dropdown-item:hover {
+  background-color: #4b5563; 
+}
+
 </style>
