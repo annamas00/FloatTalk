@@ -3,7 +3,7 @@
     <div class="map-container" id="map"></div>
 
     <div class="sidebar">
-      <!-- 左侧按钮 -->
+      <!-- link sidebar -->
       <div class="flex-1 flex flex-col items-center justify-center space-y-4">
         <button @click="showForm = true" class="btn-action">
           <div class="btn-inner">
@@ -20,21 +20,21 @@
         </button>
       </div>
 
-      <!-- 用户头像按钮 -->
+      <!-- user -->
       <div class="flex justify-center pb-4">
         <router-link to="/login" class="profile-btn" title="Profile">
           <UserCircle class="w-7 h-7" />
         </router-link>
       </div>
 
-      <!-- 弹窗表单 -->
+      <!-- new windows -->
       <div v-if="showForm" class="form-modal">
         <div class="form-box">
           <h3 class="text-lg font-bold mb-3" >New Bottle</h3>
 
           <textarea v-model="bottleContent" placeholder="Write your message..." class="input mb-2"></textarea>
 
-          <!-- 标签输入区域 -->
+          <!-- taginpuit -->
           <div class="tag-input mb-2">
             <div v-for="(tag, index) in tagList" :key="index" class="tag-chip">
               {{ tag }}
@@ -70,7 +70,7 @@ import markerIcon from '../assets/leaflet/marker-icon.png'
 import markerShadow from '../assets/leaflet/marker-shadow.png'
 import { Send, BookOpen, UserCircle } from 'lucide-vue-next'
 
-// 表单逻辑导入
+
 import {
   showForm,
   bottleContent,

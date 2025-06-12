@@ -1,11 +1,13 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status,Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from passlib.context import CryptContext
 from jose import jwt
-from datetime import datetime
+from datetime import datetime,timedelta
 from typing import Any
+from pymongo import MongoClient
+from bson import ObjectId
 import uuid
 import json
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -52,7 +54,8 @@ db = client["floattalk"]
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-
+bottles_col = db["bottles"]  # throw a bottle
+bottles = db["bottles"]
 
 # ------------------ Config ------------------
 
@@ -181,6 +184,36 @@ async def get_valid_bottles():
         })
 
     return JSONResponse(content=bottles)
+
+
+# ------------------ Throw Logic ------------------
+@app.post("/add_bottle")
+async def add_bottle(req: Request):
+    data = await req.json()
+
+    bottle_doc = {
+        "bottle_id": data["bottle_id"],
+        "sender_id": data["sender_id"],
+        "content": data["content"],
+        "type": data.get("type", "text"),
+        "bottle_timestamp": datetime.utcnow(),
+        "bottle_expire_at": datetime.utcnow() + timedelta(days=2),
+        "status": "floating",
+        "tags": data.get("tags", []),
+        "location": data.get("location", {}),
+        "picked_by": None,
+        "picked_at": None,
+        "reply_enabled": True,
+        "city": data.get("city", "")
+    }
+
+    bottles.insert_one(bottle_doc)
+    return {"status": "success", "message": "Bottle stored!"}
+
+
+
+
+
 
 # -- Startseite --
 @app.get("/")
