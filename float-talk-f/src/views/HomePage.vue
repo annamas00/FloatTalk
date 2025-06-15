@@ -57,29 +57,63 @@
         </div>
       </div>
 
-      <!-- Dropdown toggle button -->
-       
-        <div class="w-full mt-4">
-          <button @click="toggleDropdown" class="btn-action w-full flex justify-between items-center">
-            <span>My Bottles</span>
-            <span>{{ dropdownOpen ? '▲' : '▼' }}</span>
-          </button>
 
-          <div v-if="dropdownOpen" class="dropdown-list">
-              <div
-                v-for="(bottle, index) in myBottles"
-                :key="index"
-                class="dropdown-item"
-                @click="viewBottleDetail(bottle)"
-              >
-                {{ bottle.content.slice(0, 20) }}...
-              </div>
+
+<!-- All Bottles dropdown -->
+<div class="w-full mt-4">
+  <button @click="toggleAllDropdown" class="btn-action w-full flex justify-between items-center">
+    <span>All Bottles</span>
+    <span>{{ allDropdownOpen ? '▲' : '▼' }}</span>
+  </button>
+
+  <div v-if="allDropdownOpen" class="dropdown-list">
+    <div
+      v-for="(bottle, index) in allBottles"
+      :key="index"
+      class="dropdown-item"
+      @click="viewAllBottleDetail(bottle)"
+    >
+      {{ bottle && bottle.content ? bottle.content.slice(0, 20) : '[No Content]' }}
+    </div>
+  </div>
+</div>
+
+<!-- All Bottle Detail Modal -->
+<div v-if="allDetailVisible" class="dialog-overlay">
+  <div class="dialog-box text-black">
+    <div class="dialog-header">
+      <h2 class="dialog-title">📦 Bottle Detail</h2>
+      <button class="dialog-close" @click="closeAllDetailModal">×</button>
+    </div>
+
+    <div class="dialog-body">
+      <p class="dialog-content">{{ selectedAllBottle?.content }}</p>
+      <div class="dialog-tags" v-if="selectedAllBottle?.tags">
+        <span v-for="(tag, idx) in selectedAllBottle.tags" :key="idx" class="tag-chip">
+          {{ tag }}
+        </span>
+      </div>
+
+      <!-- Reply Button -->
+          <div class="dialog-reply mt-4">
+            <div v-if="!showReplyInput" class="flex justify-end">
+              <button class="btn-submit" @click="toggleReplyBox(selectedAllBottle?.bottle_id)">Reply</button>
             </div>
 
+            <div v-else>
+              <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
+              <div class="flex justify-end mt-2 space-x-2">
+                <button class="btn-cancel" @click="cancelReply">Cancel</button>
+                <button class="btn-submit" @click="sendReply(selectedAllBottle)">Send</button>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+    </div>
 
 
-        <!-- check my bottle -->
+          <!-- check my bottle -->
           <div v-if="detailVisible" class="dialog-overlay">
             <div class="dialog-box">
               <div class="dialog-header">
@@ -100,7 +134,26 @@
             </div>
           </div>
 
+          <!-- Dropdown toggle button -->
+       
+        <div class="w-full mt-4">
+          <button @click="toggleDropdown" class="btn-action w-full flex justify-between items-center">
+            <span>my Bottles</span>
+            <span>{{ dropdownOpen ? '▲' : '▼' }}</span>
+          </button>
 
+          <div v-if="dropdownOpen" class="dropdown-list">
+              <div
+                v-for="(bottle, index) in myBottles"
+                :key="index"
+                class="dropdown-item"
+                @click="viewBottleDetail(bottle)"
+              >
+                {{ bottle.content.slice(0, 20) }}...
+              </div>
+            </div>
+
+        </div>
 
     </div>
   </div>
@@ -140,8 +193,33 @@ import {
 } from './myBottlesLogic.js'
 
 onMounted(() => {
+
   fetchMyBottles()
 })
+onMounted(() => {
+
+  fetchAllBottles()
+})
+import {
+  selectedBottle as selectedAllBottle,
+  allDetailVisible,
+  viewAllBottleDetail,
+  closeDetailModal as closeAllDetailModal,
+  allBottles,
+  fetchAllBottles,
+  allDropdownOpen,
+  toggleAllDropdown
+} from './allBottlesLogic.js'
+
+import {
+  showReplyInput,
+  replyContent,
+ 
+  toggleReplyBox,
+  cancelReply,messageHistory, 
+  loadMessageHistory ,
+  sendReply
+} from './replyLogic.js'
 
 
 function formatTimestamp(ts) {
@@ -509,5 +587,16 @@ h3 {
 .dropdown-item:hover {
   background-color: #4b5563; 
 }
+
+.reply-input {
+  width: 100%;
+  min-height: 80px;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
 
 </style>

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status,Request
+from fastapi import FastAPI, Depends, HTTPException, status,Request,APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
@@ -13,6 +13,8 @@ import json
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 import os
+from pydantic import BaseModel, EmailStr
+
 
 # ------------------ App Setup ------------------
 
@@ -51,11 +53,15 @@ async def startup_db_check():
 
 db = client["floattalk"]
 
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 bottles_col = db["bottles"]  # throw a bottle
 bottles = db["bottles"]
+messages = db["messages"]
+conversations = db["conversations"]
+
 
 # ------------------ Config ------------------
 
@@ -229,6 +235,97 @@ async def get_my_bottles(user_id: str):
             "status": doc.get("status", "floating")
         })
     return {"bottles": result}
+
+
+@app.get("/all_bottles")
+async def get_all_bottles():
+    result = []
+    cursor = bottles.find().sort("bottle_timestamp", -1)
+    async for doc in cursor:
+        result.append({
+            "bottle_id": doc.get("bottle_id"),
+            "content": doc.get("content"),
+            "tags": doc.get("tags", []),
+            "timestamp": doc.get("bottle_timestamp"),
+            "status": doc.get("status", "floating")
+        })
+    return {"bottles": result}
+
+# ------------------ conversation ------------------
+
+@app.post("/reply")
+async def send_reply(data: dict):
+    bottle_id = data.get("bottle_id")
+    sender_id = data.get("sender_id")
+    receiver_id = data.get("receiver_id")
+    content = data.get("content")
+
+    if not all([bottle_id, sender_id, receiver_id, content]):
+        return {"status": "error", "message": "Missing required fields"}
+
+    # looking for conv
+    conv = await conversations.find_one({"bottle_id": bottle_id})
+    if not conv:
+        # if no conversation，build new
+        conversation_id = f"conv_{bottle_id}"
+        conv_doc = {
+            "conversation_id": conversation_id,
+            "bottle_id": bottle_id,
+            "participants": [sender_id, receiver_id],
+            "created_at": datetime.utcnow(),
+            "last_updated": datetime.utcnow(),
+            "status": "active",
+            "reply_enabled": True
+        }
+        await conversations.insert_one(conv_doc)
+    else:
+        conversation_id = conv["conversation_id"]
+
+    # build message
+    message = {
+        "message_id": f"msg_{int(datetime.utcnow().timestamp())}",
+        "conversation_id": conversation_id,
+        "bottle_id": bottle_id,
+        "sender_id": sender_id,
+        "receiver_id": receiver_id,
+        "content": content,
+        "type": "text",
+        "timestamp": datetime.utcnow(),
+        "status": "sent",
+        "reply_to": None
+    }
+
+    await messages.insert_one(message)
+
+    # update conversation timestamps
+    await conversations.update_one(
+        {"conversation_id": conversation_id},
+        {"$set": {"last_updated": datetime.utcnow()}}
+    )
+
+    return {"status": "success", "message": "Reply stored"}
+
+
+@app.get("/conversation/{bottle_id}/messages")
+async def get_conversation_messages(bottle_id: str):
+    # 找到该瓶子是否已存在 conversation
+    conv = await conversations.find_one({"bottle_id": bottle_id})
+    if not conv:
+        return {"messages": []}
+
+    # 获取所有该 conversation 下的 messages
+    cursor = messages.find({"conversation_id": conv["conversation_id"]}).sort("timestamp", 1)
+    result = []
+    async for msg in cursor:
+        msg["_id"] = str(msg["_id"])
+        result.append({
+            "sender_id": msg.get("sender_id"),
+            "content": msg.get("content"),
+            "timestamp": msg.get("timestamp"),
+            "type": msg.get("type", "text"),
+            "status": msg.get("status", "sent"),
+        })
+    return {"messages": result}
 
 
 
