@@ -1,48 +1,38 @@
-from fastapi import FastAPI, Depends, HTTPException, status,Request,APIRouter
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from passlib.context import CryptContext
-from jose import jwt
-from datetime import datetime,timedelta
+from jose import jwt, JWTError
+from datetime import datetime
 from typing import Any
-from pymongo import MongoClient
-from bson import ObjectId
 import uuid
-import json
+import os
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
-import os
-from pydantic import BaseModel, EmailStr
-
-
-# ------------------ App Setup ------------------
+from fastapi import Body
+# ------------------ Setup ------------------
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-    "http://localhost:5174","http://localhost:5173",
-    "https://annamas00.github.io" 
-],
+    allow_origins=["http://localhost:5174", "http://localhost:5173", "https://annamas00.github.io"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ------------------ Load Config ------------------
-
-load_dotenv()  # Load .env file
-
-
-
+load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
 ALGORITHM = "HS256"
 MONGO_URI = os.getenv("MONGO_URI")
-print("📡 MONGO_URI =", MONGO_URI)
 
 client = AsyncIOMotorClient(MONGO_URI)
+db = client["floattalk"]
+users_collection = db.users
+logs_collection = db.logs
+
 @app.on_event("startup")
 async def startup_db_check():
     try:
@@ -51,27 +41,8 @@ async def startup_db_check():
     except Exception as e:
         print("❌ MongoDB connection failed:", e)
 
-db = client["floattalk"]
-
-
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-bottles_col = db["bottles"]  # throw a bottle
-bottles = db["bottles"]
-messages = db["messages"]
-conversations = db["conversations"]
-
-
-# ------------------ Config ------------------
-
-LOG_FILE = "logs.jsonl"
-ALGORITHM = "HS256"
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-fake_users_db = {}  # fake user "database"
 
 # ------------------ Models ------------------
 
@@ -81,12 +52,21 @@ class LogEntry(BaseModel):
     details: Any
 
 class UserProfile(BaseModel):
-    email: str
+    email: EmailStr
     user_id: str
+    nickname: str
 
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
+
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str
+    first_name: str
+    last_name: str
+    nickname: str
+
 # ------------------ Utils ------------------
 
 def verify_password(plain, hashed):
@@ -101,7 +81,7 @@ def create_access_token(data: dict):
 def decode_token(token: str):
     try:
         return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except:
+    except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
@@ -111,231 +91,68 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=401, detail="Invalid token payload")
     return email
 
-# ------------------ Auth Routes ------------------
+# ------------------ Routes ------------------
 
 @app.post("/register")
-async def register(email: str, password: str):
-    existing = await db.users.find_one({"email": email})
-    if existing:
-        raise HTTPException(status_code=400, detail="User already exists")
+async def register_user(payload: RegisterRequest):
+    # Check for existing email
+    existing_user = await users_collection.find_one({"email": payload.email})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    existing_nickname = await users_collection.find_one({"nickname": payload.nickname})
+    if existing_nickname:
+        raise HTTPException(status_code=400, detail="Nickname already taken")
 
     user = {
-        "email": email,
-        "hashed_password": hash_password(password),
+        "email": payload.email,
+        "hashed_password": pwd_context.hash(payload.password),
+        "first_name": payload.first_name,
+        "last_name": payload.last_name,
+        "nickname": payload.nickname,
         "user_id": f"user_{uuid.uuid4()}"
     }
-    await db.users.insert_one(user)
-    return {"msg": "Registered successfully"}
 
-
+    await users_collection.insert_one(user)
+    return {"msg": "User registered successfully"}
 @app.post("/token")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = await db.users.find_one({"email": form_data.username})
+    user = await users_collection.find_one({"email": form_data.username})
     if not user or not verify_password(form_data.password, user["hashed_password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    token = create_access_token({"sub": form_data.username})
+    token = create_access_token({"sub": user["email"]})
     return {"access_token": token, "token_type": "bearer"}
 
 @app.get("/me", response_model=UserProfile)
 async def read_me(current_user_email: str = Depends(get_current_user)):
-    user = await db.users.find_one({"email":current_user_email})
+    user = await users_collection.find_one({"email": current_user_email})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     return {
         "email": user["email"],
         "user_id": user["user_id"]
     }
 
-@app.get("/")
-def read_root():
-    return {"status": "ok"}
-# ------------------ App Logic ------------------
-
 @app.get("/auth/anon")
 async def create_anon_user():
     return {"user_id": f"anon_{uuid.uuid4()}"}
-
-#-- @app.post("/log")
-#async def log_event(entry: LogEntry):
- #   log = entry.dict()
-  #  log["timestamp"] = datetime.utcnow().isoformat()
-   # await db.logs.insert_one(log)
-    #return {"status": "logged"} ----
-
 
 @app.post("/log")
 async def log_event(entry: LogEntry):
     log = entry.dict()
     log["timestamp"] = datetime.utcnow().isoformat()
-    print("📥 Log wird gespeichert:", log)
-    result = await db.logs.insert_one(log)
-    print("📦 Mongo Insert Result:", result.inserted_id)
+    print("📥 Log received:", log)
+    result = await logs_collection.insert_one(log)
+    print("📦 Mongo insert ID:", result.inserted_id)
     return {"status": "logged"}
 
-from fastapi.responses import JSONResponse
-from datetime import datetime
-
-@app.get("/bottles")
-async def get_valid_bottles():
-    now = datetime.utcnow().isoformat()
-    cursor = db.logs.find({
-        "action": "bottle_thrown",
-        "details.duration_until": { "$gt": now }
-    })
-
-    bottles = []
-    async for doc in cursor:
-        bottles.append({
-            "title": doc["action"],
-            "message": doc["details"].get("tags", []),
-            "location": doc["details"].get("location", {}),
-            "time": doc["details"].get("time"),
-            "duration_until": doc["details"].get("duration_until")
-        })
-
-    return JSONResponse(content=bottles)
-
-
-# ------------------ Throw Logic ------------------
-@app.post("/add_bottle")
-async def add_bottle(req: Request):
-    data = await req.json()
-
-    bottle_doc = {
-        "bottle_id": data["bottle_id"],
-        "sender_id": data["sender_id"],
-        "content": data["content"],
-        "type": data.get("type", "text"),
-        "bottle_timestamp": datetime.utcnow(),
-        "bottle_expire_at": datetime.utcnow() + timedelta(days=2),
-        "status": "floating",
-        "tags": data.get("tags", []),
-        "location": data.get("location", {}),
-        "picked_by": None,
-        "picked_at": None,
-        "reply_enabled": True,
-        "city": data.get("city", "")
-    }
-
-    bottles.insert_one(bottle_doc)
-    return {"status": "success", "message": "Bottle stored!"}
-
-@app.get("/my_bottles")
-async def get_my_bottles(user_id: str):
-    result = []
-    cursor = bottles.find({"sender_id": user_id}).sort("bottle_timestamp", -1)
-    async for doc in cursor:
-        result.append({
-            "bottle_id": doc.get("bottle_id"),
-            "content": doc.get("content"),
-            "tags": doc.get("tags", []),
-            "timestamp": doc.get("bottle_timestamp"),
-            "status": doc.get("status", "floating")
-        })
-    return {"bottles": result}
-
-
-@app.get("/all_bottles")
-async def get_all_bottles():
-    result = []
-    cursor = bottles.find().sort("bottle_timestamp", -1)
-    async for doc in cursor:
-        result.append({
-            "bottle_id": doc.get("bottle_id"),
-            "content": doc.get("content"),
-            "tags": doc.get("tags", []),
-            "timestamp": doc.get("bottle_timestamp"),
-            "status": doc.get("status", "floating")
-        })
-    return {"bottles": result}
-
-# ------------------ conversation ------------------
-
-@app.post("/reply")
-async def send_reply(data: dict):
-    bottle_id = data.get("bottle_id")
-    sender_id = data.get("sender_id")
-    receiver_id = data.get("receiver_id")
-    content = data.get("content")
-
-    if not all([bottle_id, sender_id, receiver_id, content]):
-        return {"status": "error", "message": "Missing required fields"}
-
-    # looking for conv
-    conv = await conversations.find_one({"bottle_id": bottle_id})
-    if not conv:
-        # if no conversation，build new
-        conversation_id = f"conv_{bottle_id}"
-        conv_doc = {
-            "conversation_id": conversation_id,
-            "bottle_id": bottle_id,
-            "participants": [sender_id, receiver_id],
-            "created_at": datetime.utcnow(),
-            "last_updated": datetime.utcnow(),
-            "status": "active",
-            "reply_enabled": True
-        }
-        await conversations.insert_one(conv_doc)
-    else:
-        conversation_id = conv["conversation_id"]
-
-    # build message
-    message = {
-        "message_id": f"msg_{int(datetime.utcnow().timestamp())}",
-        "conversation_id": conversation_id,
-        "bottle_id": bottle_id,
-        "sender_id": sender_id,
-        "receiver_id": receiver_id,
-        "content": content,
-        "type": "text",
-        "timestamp": datetime.utcnow(),
-        "status": "sent",
-        "reply_to": None
-    }
-
-    await messages.insert_one(message)
-
-    # update conversation timestamps
-    await conversations.update_one(
-        {"conversation_id": conversation_id},
-        {"$set": {"last_updated": datetime.utcnow()}}
-    )
-
-    return {"status": "success", "message": "Reply stored"}
-
-
-@app.get("/conversation/{bottle_id}/messages")
-async def get_conversation_messages(bottle_id: str):
-    # 找到该瓶子是否已存在 conversation
-    conv = await conversations.find_one({"bottle_id": bottle_id})
-    if not conv:
-        return {"messages": []}
-
-    # 获取所有该 conversation 下的 messages
-    cursor = messages.find({"conversation_id": conv["conversation_id"]}).sort("timestamp", 1)
-    result = []
-    async for msg in cursor:
-        msg["_id"] = str(msg["_id"])
-        result.append({
-            "sender_id": msg.get("sender_id"),
-            "content": msg.get("content"),
-            "timestamp": msg.get("timestamp"),
-            "type": msg.get("type", "text"),
-            "status": msg.get("status", "sent"),
-        })
-    return {"messages": result}
-
-
-
-# -- Startseite --
 @app.get("/")
 async def root():
-    return {"message": "Welcome to the FloatTalk API 🎉"}
+    return {"message": "It works."}
 
-
-# ------------------ Start Server ------------------
+# ------------------ Run ------------------
 
 if __name__ == "__main__":
     import uvicorn

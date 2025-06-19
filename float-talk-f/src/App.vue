@@ -1,34 +1,12 @@
 <template>
-  <RouterView v-slot="{ Component }">
-    <component :is="Component" />
-  </RouterView>
-
-  <div class="flex-1 flex flex-col items-center justify-center space-y-4">
-    <router-link to="/throw" class="btn-action">
-  <div class="btn-inner">
-    <Send class="w-5 h-5" />
-    <span>Throw a Bottle</span>
-  </div>
-</router-link>
-
-    <button @click="readBottle" class="btn-action">
-      <div class="btn-inner">
-        <BookOpen class="w-5 h-5" />
-        <span>Read Past Bottles</span>
-      </div>
-    </button>
-  </div>
-
-  <div class="flex justify-center pb-4">
-  <router-link to="/login" class="profile-btn" title="Profile">
-    <UserCircle class="w-7 h-7" />
-  </router-link>
-</div>
+  <RouterView />
 </template>
 
 
+
 <script setup>
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, watchEffect, nextTick } from 'vue';
+import { useRoute } from 'vue-router';
 import { getOrCreateUserId } from './auth.js';
 import { logEvent } from './logger.js';
 import L from 'leaflet';
@@ -38,9 +16,12 @@ import markerIcon2x from './assets/leaflet/marker-icon-2x.png';
 import markerIcon from './assets/leaflet/marker-icon.png';
 import markerShadow from './assets/leaflet/marker-shadow.png';
 import { Send, BookOpen, UserCircle } from 'lucide-vue-next';
-import axios from 'axios'
+import axios from 'axios';
 
-
+const nickname = ref('Anonymous');
+const nicknameInput = ref('');
+const userId = ref('');
+const route = useRoute();
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -49,16 +30,14 @@ L.Icon.Default.mergeOptions({
   iconUrl: markerIcon,
   shadowUrl: markerShadow,
 });
-const nickname = ref('Anonymous');
-const nicknameInput = ref('');
-const userId = ref('');
 
-onMounted(async () => {
+watchEffect(async () => {
+  if (route.path === '/login') return;
+
+  await nextTick();
+
   userId.value = await getOrCreateUserId();
   nickname.value = localStorage.getItem('nickname') || 'Anonymous';
-
-  // Wait until DOM is laid out
-  await nextTick();
 
   const map = L.map('map').setView([48.1351, 11.5820], 12); // Munich
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -73,10 +52,10 @@ onMounted(async () => {
       className: 'text-sm'
     });
     marker.bindPopup(`
-    <strong>${bottle.title}</strong><br/>
-    <p style="margin-top: 0.5em;">${bottle.message}</p>
-    <small>📍 Zip Code: ${bottle.zip}</small>
-  `);
+      <strong>${bottle.title}</strong><br/>
+      <p style="margin-top: 0.5em;">${bottle.message}</p>
+      <small>📍 Zip Code: ${bottle.zip}</small>
+    `);
   });
 });
 
@@ -157,39 +136,36 @@ body,
 
 
 /* Grid layout with 2 columns: map + sidebar */
-.grid-container {
+.main-layout .grid-container {
   display: grid;
   grid-template-columns: 1fr 300px;
   height: 100vh;
   width: 100vw;
 }
 
-/* Map must be full height */
-.map-container {
+.main-layout .map-container {
   height: 100%;
   width: 100%;
 }
 
-/* Sidebar */
-.sidebar {
-  @apply bg-gray-900 text-white px-6 py-8 flex flex-col h-full; 
+.main-layout .sidebar {
+  @apply bg-gray-900 text-white px-6 py-8 flex flex-col h-full;
 }
 
-/* Buttons */
-.btn-action {
+.main-layout .btn-action {
   @apply w-56 bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-lg text-white font-medium transition duration-200;
 }
 
-.btn-inner {
+.main-layout .btn-inner {
   @apply flex items-center justify-center gap-2;
 }
 
-.profile-btn {
+.main-layout .profile-btn {
   @apply bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition-colors;
 }
 
-.btn-action:hover,
-.profile-btn:hover {
+.main-layout .btn-action:hover,
+.main-layout .profile-btn:hover {
   @apply ring-2 ring-indigo-400 ring-offset-2;
 }
 
