@@ -33,7 +33,8 @@
 
 <script setup>
 import { BookOpen, Send, UserCircle } from 'lucide-vue-next'
-import { logEvent } from '@/logger.js'
+import { logEvent } from '../logger';
+
 import axios from 'axios'
 
 async function readBottle() {

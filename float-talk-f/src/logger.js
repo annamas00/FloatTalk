@@ -73,4 +73,18 @@ export function logout() {
   localStorage.removeItem("user_id");
 }
 
+export async function logEvent(action, details = {}) {
+  const user_id = localStorage.getItem("user_id") || "unknown";
 
+  await fetch(`${API_URL}/log`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      user_id,
+      action,
+      details
+    })
+  });
+}
