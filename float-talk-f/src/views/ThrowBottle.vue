@@ -22,8 +22,8 @@
   <div v-if="showModal" class="modal-overlay">
     <div class="modal">
       <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
-      <p class="mb-4">Deine Nachricht wurde geworfen und auf der Karte gespeichert.</p>
-      <button @click="goToMap" class="btn-action">Zurück zur Karte</button>
+      <p class="mb-4">Your message has been thrown and saved on the map.</p>
+      <button @click="goToMap" class="btn-action">Go back to map</button>
     </div>
   </div>
 

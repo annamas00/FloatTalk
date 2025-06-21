@@ -5,12 +5,15 @@
     <div class="sidebar">
       <!-- link sidebar -->
       <div class="flex-1 flex flex-col items-center justify-center space-y-4">
-        <button @click="showForm = true" class="btn-action">
+        <!-- Trigger Button -->
+      <button @click="prepareThrowForm" class="btn-action mb-4">
+       <!-- <button @click="showForm = true" class="btn-action"> -->
           <div class="btn-inner">
             <Send class="w-5 h-5" />
             <span>Throw a Bottle</span>
           </div>
         </button>
+
 
         <button @click="readBottle" class="btn-action">
           <div class="btn-inner">
@@ -20,12 +23,15 @@
         </button>
       </div>
 
-      <!-- user -->
-      <div class="flex justify-center pb-4">
+      <!-- user  -->
+      <div class= "flex justify-center pb-4">
         <router-link to="/login" class="profile-btn" title="Profile">
           <UserCircle class="w-7 h-7" />
         </router-link>
       </div>
+
+
+  
 
       <!-- new windows -->
       <div v-if="showForm" class="form-modal">
@@ -55,6 +61,13 @@
             <button class="btn-submit" @click="submitBottle">Send</button>
           </div>
         </div>
+</div>
+<div v-if="showSuccessModal" class="modal-overlay">
+  <div class="modal">
+    <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
+    <p class="mb-4">Your message has been thrown and saved on the map.</p>
+    <button  @click="goToMap" class="btn-action">Go back to map</button>
+  </div>
       </div>
 
 
@@ -160,7 +173,7 @@
 </template>
 
 <script setup>
-import { onMounted, nextTick } from 'vue'
+import { onMounted, nextTick, ref} from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import axios from 'axios'
@@ -178,7 +191,9 @@ import {
   tagList,
   tagInput,
   removeTag,
-  handleTagKeydown
+  handleTagKeydown, 
+  prepareThrowForm,
+  showSuccessModal
 } from './throwBottleLogic.js'
 
 import {
@@ -222,12 +237,16 @@ import {
 } from './replyLogic.js'
 
 
+
+
+
 function formatTimestamp(ts) {
   if (!ts) return ''
   return new Date(ts).toLocaleString()
 }
 
-let map
+const map = ref(null)
+let mapInstance = null
 let markers = []
 
 delete L.Icon.Default.prototype._getIconUrl
@@ -251,43 +270,59 @@ async function loadBottles() {
   })
 }
 
-function getUserLocation() {
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      const userCoords = [position.coords.latitude, position.coords.longitude]
-      L.marker(userCoords)
-        .addTo(map)
-        .bindPopup('📍 Your Location')
-        .openPopup()
-      map.setView(userCoords, 13)
-    },
-    (error) => {
-      console.warn('Location error:', error)
-    }
-  )
-}
+
 
 onMounted(async () => {
+
   await nextTick()
-  map = L.map('map').setView([48.1351, 11.5820], 12)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map)
+const mapContainer = document.getElementById('map')
+if (!mapContainer) {
+  console.error('❌ Map container not found!')
+  return
+}
+
+  if (!mapInstance) {
+    mapInstance = L.map(mapContainer).setView([48.1351, 11.5820], 13)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(mapInstance)
+    map.value = mapInstance
+  } else {
+    console.warn('⚠️ Map is already initialized')
+  }
+
 
   await loadBottles()
+  // 📍 Standort aus localStorage holen
+  const savedLat = localStorage.getItem('userLat')
+  const savedLon = localStorage.getItem('userLon')
+  
+
+  if (savedLat && savedLon) {
+    const lat = parseFloat(savedLat)
+    const lon = parseFloat(savedLon)
+ // Marker und Zoom setzen
+    const marker = L.marker([lat, lon])
+      .addTo(mapInstance)
+      .bindPopup('📍 Your Location')
+      .openPopup()
+
+    mapInstance.setView([lat, lon], 13)
+  }
 
   const query = new URLSearchParams(window.location.search)
-  const lat = query.get('lat')
-  const lon = query.get('lon')
-  const msg = query.get('msg')
+const queryLat = query.get('lat')
+const queryLon = query.get('lon')
+const msg = query.get('msg')
+const storedCoords = localStorage.getItem('coords' || '{}')
 
-  if (lat && lon && msg) {
-    const marker = L.marker([parseFloat(lat), parseFloat(lon)])
-      .addTo(map)
+if (queryLat && queryLon && msg) {
+    const marker = L.marker([parseFloat(queryLat), parseFloat(queryLon)])
+      .addTo(map.value)
       .bindPopup(`<strong>📦 New Bottle:</strong><br/>${msg}`)
       .openPopup()
 
-    map.setView([parseFloat(lat), parseFloat(lon)], 14)
+    mapInstance.setView([parseFloat(queryLat), parseFloat(queryLon)], 14)
     window.history.replaceState({}, document.title, '/')
   }
 })
@@ -295,6 +330,25 @@ onMounted(async () => {
 function readBottle() {
   alert('Read bottles not yet implemented.')
 }
+
+
+
+
+function goToMap() {
+  showSuccessModal.value = false
+
+  const lat = localStorage.getItem('lastBottleLat')
+  const lon = localStorage.getItem('lastBottleLon')
+
+  if (lat && lon && mapInstance) {
+    const coords = [parseFloat(lat), parseFloat(lon)]
+    mapInstance.setView(coords, 16) // ⬅️ Zoom-Level auf Standort
+
+    // Marker mit "New Bottle"
+    L.marker(coords).addTo(mapInstance).bindPopup('📦 New Bottle').openPopup()
+  }
+}
+
 </script>
 
 <style scoped>
@@ -597,6 +651,30 @@ h3 {
   font-size: 1rem;
   box-sizing: border-box;
 }
+
+/*thrownsuccessmodal*/
+
+
+.modal {
+  background-color: white; /* ❗ weißer Hintergrund */
+  color: black;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+}
+
+.btn-action {
+  background-color: #4f46e5;
+  color: white;
+  padding: 0.5rem 1.2rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
 
 
 </style>

@@ -43,6 +43,25 @@
       </p>
     </div>
   </div>
+
+<!-- Manuelle Standort-Eingabe im Stil von "New Bottle" -->
+<div v-if="showManualInput" class="form-modal">
+  <div class="form-box">
+    <h3 class="text-lg font-bold mb-3">📍 Standort manuell eingeben</h3>
+
+    <input v-model="manualInput.country" type="text" placeholder="Country *" class="input mb-2" required />
+    <input v-model="manualInput.city" type="text" placeholder="City *" class="input mb-2" required />
+    <input v-model="manualInput.street" type="text" placeholder="Street (optional)" class="input mb-4" />
+
+    <div class="flex justify-end space-x-2">
+      <button class="btn-cancel" @click="showManualInput = false">Abbrechen</button>
+      <button class="btn-submit" @click="geocodeManualLocation">Speichern & Weiter</button>
+    </div>
+  </div>
+</div>
+
+
+
 </template>
 
 
@@ -50,7 +69,7 @@
 
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 
@@ -62,6 +81,41 @@ const firstName = ref('')
 const lastName = ref('')
 const nickname = ref('')
 
+
+//const locationDenied = ref(false)
+
+
+const showManualInput = ref(false)
+const manualInput = ref({ country: '', city: '', street: '' })
+
+
+ /* onMounted(() => {
+    // Jedes Mal Standort abfragen, auch bei wiederholtem Aufruf
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const coords = {
+        lat: pos.coords.latitude,
+        lon: pos.coords.longitude
+      }
+      localStorage.setItem('coords', JSON.stringify(coords))
+    },
+    () => {
+      showManualInput.value = true
+    }
+  )
+}) */
+
+
+function capitalizeWords(str) {
+  return str
+    .toLocaleLowerCase('de-DE') // erst alles klein (inkl. Ü → ü)
+    .replace(/\b\p{L}+/gu, (word) =>
+      word.charAt(0).toLocaleUpperCase('de-DE') + word.slice(1)
+    )
+}
+
+
+
 async function handleLogin() {
   try {
     const res = await axios.post('http://localhost:8000/token', new URLSearchParams({
@@ -70,13 +124,121 @@ async function handleLogin() {
     }))
     const token = res.data.access_token
     localStorage.setItem('token', token)
+
+     localStorage.removeItem('userLat')
+    localStorage.removeItem('userLon')
+
+
+     // 📍 Nach erfolgreichem Login: Standortabfrage starten
+        navigator.geolocation.getCurrentPosition(
+  async (pos) => {
+    const lat = parseFloat(pos.coords.latitude.toFixed(4))
+    const lon = parseFloat(pos.coords.longitude.toFixed(4))
+    localStorage.setItem('userLat', lat)
+    localStorage.setItem('userLon', lon)
+
+    // ➕ Reverse-Geocoding durchführen
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+      const data = await res.json()
+      const address = data.address || {}
+      const road = address.road || ''
+      const cityName = address.city || address.town || address.village || ''
+
+      const locationText = road
+        ? `${capitalizeWords(road)}, ${capitalizeWords(cityName)}`
+        : capitalizeWords(cityName)
+
+      localStorage.setItem('userLocationText', locationText)
+    } catch (e) {
+      console.warn('Reverse-Geocoding fehlgeschlagen:', e)
+    }
+
+    router.push('/home')
+  },
+      (err) => {
+        console.warn('Standort nicht verfügbar:', err)
+        showManualInput.value = true // ⬅️ Jetzt Modal anzeigen
+      },
+      { timeout: 5000 }
+    )
+    
     alert('✅ Login erfolgreich!')
-    router.push('/')
   } catch (err) {
     alert('❌ Login fehlgeschlagen!')
     console.error(err)
   }
 }
+
+
+async function geocodeManualLocation() {
+  if (!manualInput.value.country || !manualInput.value.city) {
+    alert('Bitte Land und Stadt eingeben.')
+    return
+  }
+
+  const query = encodeURIComponent(
+    `${manualInput.value.street ? manualInput.value.street + ', ' : ''}${manualInput.value.city}, ${manualInput.value.country}`
+  )
+
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${query}`
+
+  try {
+    const res = await fetch(url)
+    const data = await res.json()
+
+    if (data.length === 0) {
+      alert('Adresse nicht gefunden.')
+      return
+    }
+
+   const lat = data[0].lat
+const lon = data[0].lon
+const address = data[0].address || {}
+/* const detectedCity = address.city || address.town || address.village || manualInput.value.city
+const detectedStreet = address.road || manualInput.value.street
+    // ➤ Location-Feld: Zeige Straße, falls vorhanden – sonst Stadt
+   const locText = detectedStreet ? `${detectedStreet}, ${detectedCity}` : detectedCity
+
+   const readable = manualInput.value.street
+  ? capitalizeWords(manualInput.value.street)
+  : capitalizeWords(manualInput.value.city) */
+  const result = data[0]
+
+const detectedCity = capitalizeWords(address.city || address.town || address.village || '')
+const detectedStreet = capitalizeWords(address.road || '')
+
+const formattedCity = capitalizeWords(detectedCity)
+const formattedStreet = capitalizeWords(detectedStreet)
+
+const locText = formattedStreet
+  ? `${capitalizeWords(formattedStreet)}, ${capitalizeWords(formattedCity)}`
+  : capitalizeWords(formattedCity)
+
+localStorage.setItem('userLocationText', locText)
+localStorage.setItem('userLat', parseFloat(result.lat))
+localStorage.setItem('userLon', parseFloat(result.lon))
+localStorage.setItem('userCity', formattedCity)
+
+/*
+localStorage.setItem('userLocationText', readable)
+
+    localStorage.setItem('userLocationText', locText)
+localStorage.setItem('userLat', parseFloat(lat))
+localStorage.setItem('userLon', parseFloat(lon))
+localStorage.setItem('userCity', detectedCity)*/
+
+    alert('📍 Standort gespeichert!')
+    showManualInput.value = false
+    router.push({ path: '/home' })
+  } catch (err) {
+    console.error('Geocoding failed:', err)
+    alert('Fehler bei der Standortsuche.')
+  }
+  
+}
+
+
 
 async function handleRegister() {
   try {
@@ -224,4 +386,49 @@ button[type='submit']:hover {
   width: 100%;
   align-items: center;
 }
+
+/*Manual form*/
+.form-modal {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.form-box {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+}
+
+.btn-submit {
+  background-color: #10b981; /* Tailwind Emerald */
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: bold;
+}
+
+.btn-cancel {
+  background-color: #e5e7eb; /* Tailwind Gray-200 */
+  color: #374151; /* Tailwind Gray-700 */
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: bold;
+}
+
 </style>

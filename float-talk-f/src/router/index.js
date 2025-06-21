@@ -9,24 +9,22 @@ import ThrowBottle from '../views/ThrowBottle.vue'
 import MainLayout from '../layouts/MainLayout.vue'
 import AuthLayout from '../layouts/AuthLayout.vue'
 
+
+
 const routes = [
   {
     path: '/',
-    component: MainLayout,
-    children: [
-      { path: '', name: 'home', component: HomePage },
-      { path: 'throw', name: 'throw', component: ThrowBottle }
-    ]
+    name: 'Login',
+    component: LoginPage
   },
-
   {
-    path: '/login',
-    component: AuthLayout,
-    children: [
-      { path: '', name: 'login', component: LoginPage }
-    ]
+    path: '/home',
+    name: 'Home',
+    component: HomePage
   }
 ]
+
+
 
 export const router = createRouter({
   history: createWebHistory(),
