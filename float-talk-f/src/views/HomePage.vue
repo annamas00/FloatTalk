@@ -20,7 +20,10 @@
         </button>
 
           <button @click="showChatModal = true" class="btn-action">
-            💬 Chat
+            <div class="btn-inner">
+            <MessageSquareMore class="w-5 h-5" />
+            <span>Chat</span>
+            </div>
           </button>     
       </div>
       <!-- user -->
@@ -90,7 +93,7 @@
       </div>
 
          <!-- Reply Button -->
-        <!--   <div class="dialog-reply mt-4">
+          <div class="dialog-reply mt-4">
             <div v-if="!showReplyInput" class="flex justify-end">
               <button class="btn-submit" @click="toggleReplyBox(currentBottleId)">Reply</button>
             </div>
@@ -99,10 +102,11 @@
               <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
               <div class="flex justify-end mt-2 space-x-2">
                 <button class="btn-cancel" @click="cancelReply">Cancel</button>
-                <button class="btn-submit" @click="sendReply({ bottle_id: currentBottleId } )">Send</button>
+               
+                <button class="btn-submit" @click="sendReply2(currentBottleId)">Send</button>
               </div>
             </div>
-          </div>  -->
+          </div> 
           
     </div>
   </div>
@@ -267,8 +271,8 @@ import {
   replyContent,
  
   toggleReplyBox,
-  cancelReply,messageHistory, 
-  loadMessageHistory ,
+  cancelReply,
+  sendReply2,
   sendReply
 } from './replyLogic.js'
 
@@ -288,7 +292,8 @@ const {
   messageList,
   loadChatList,
   openConversation,
-  formatDate
+  formatDate,
+  currentBottleId
 } = useChatLogic(userId)
 
 onMounted(() => {

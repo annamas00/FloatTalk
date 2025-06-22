@@ -22,15 +22,18 @@ export function cancelReply() {
 
 
 //need change
-export async function sendReply(selectedAllBottle, senderId = 'user_test01') {
+export async function sendReply(selectedAllBottle) {
   console.log('Sending reply:', replyContent.value)
 
-  if (!selectedAllBottle || !replyContent.value || !senderId) {
-    console.error('❌ Missing required fields')
+  if (!selectedAllBottle ) {
+    console.error('❌ Missing required selectedAllBottle fields')
     return
   }
 
-  
+  if (!replyContent.value ) {
+    console.error('❌ Missing required reply fields')
+    return
+  }
   try {
 // need change
     const response = await axios.post('http://localhost:8000/reply', {
@@ -51,7 +54,40 @@ export async function sendReply(selectedAllBottle, senderId = 'user_test01') {
   }
 } 
 
-export async function loadMessageHistory(bottleId) {
+//need change
+export async function sendReply2(currentBottleId) {
+
+//const currentBottleId = bottleRef?.value
+  console.log('Sending reply:', replyContent.value)
+console.log('Sending reply to bottle:', currentBottleId)
+console.log('Reply content:', replyContent.value)
+
+  if (!currentBottleId || currentBottleId === 'null') {
+  console.error('❌ Missing required currentBottleId fields')
+  return
+}
+
+  try {
+// need change
+    const response = await axios.post('http://localhost:8000/reply', {
+      bottle_id: currentBottleId,
+      sender_id: 'user_test02',     
+      receiver_id: 'user_test01',  
+      content: replyContent.value,
+      reply_to: null
+    })
+
+    console.log('✅ Reply sent:', response.data)
+    alert('Reply sent successfully!')
+    cancelReply()
+
+  } catch (err) {
+    console.error('❌ Reply failed:', err)
+    alert('Failed to send reply.')
+  }
+} 
+
+/* export async function loadMessageHistory(bottleId) {
   try {
     const res = await axios.get(`http://localhost:8000/conversation/${bottleId}/messages`)
     messageHistory.value = res.data.messages
@@ -59,4 +95,4 @@ export async function loadMessageHistory(bottleId) {
   } catch (err) {
     console.error("❌ Failed to load message history:", err)
   }
-}
+} */

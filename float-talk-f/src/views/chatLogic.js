@@ -21,9 +21,9 @@ export function useChatLogic(userId) {
         const res = await axios.get(`http://localhost:8000/conversation/${convo.conversation_id}`)
         //convo.first_message = msgRes.data.messages?.[0] || null
         convo.first_message = {
-  sender_id: res.data.bottle?.sender_id,
-  content: res.data.bottle?.content,
-  timestamp: res.data.bottle?.timestamp
+        sender_id: res.data.bottle?.sender_id,
+        content: res.data.bottle?.content,
+        timestamp: res.data.bottle?.timestamp
 }
       }
 
@@ -37,11 +37,10 @@ export function useChatLogic(userId) {
 
     try {
       const res = await axios.get(`http://localhost:8000/conversation/${conversationId}`)
-     
-   
-     
       messageList.value = res.data.messages || []
-    //currentBottleId.value = res.data.bottle_id || null  // save bottle_id
+      
+    currentBottleId.value = res.data.bottle_id || null  // save bottle_id
+console.log('bottle:', currentBottleId.value)
 
       showChatDetailModal.value = true
     } catch (err) {
@@ -62,6 +61,7 @@ export function useChatLogic(userId) {
     messageList,
     loadChatList,
     openConversation,
-    formatDate
+    formatDate,
+    currentBottleId
   }
 }

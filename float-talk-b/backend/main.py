@@ -222,6 +222,7 @@ async def send_reply(data: dict):
     sender_id = data.get("sender_id")
     receiver_id = data.get("receiver_id")
     content = data.get("content")
+
     if not all([bottle_id, sender_id, receiver_id, content]):
         return {"status": "error", "message": "Missing required fields"}
  
@@ -356,6 +357,7 @@ async def get_conversation(conversation_id: str, db: AsyncIOMotorDatabase = Depe
         "conversation_id": conversation_id,
         "participants": conversation.get("participants", []),
         "messages": messages,
+        "bottle_id": conversation.get("bottle_id"),
        "bottle": {
             "sender_id": bottle.get("sender_id"),
             "content": bottle.get("content"),
