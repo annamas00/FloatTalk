@@ -21,7 +21,7 @@ export function cancelReply() {
 }
 
 
-
+//need change
 export async function sendReply(selectedAllBottle, senderId = 'user_test01') {
   console.log('Sending reply:', replyContent.value)
 
@@ -30,26 +30,20 @@ export async function sendReply(selectedAllBottle, senderId = 'user_test01') {
     return
   }
 
-
   
   try {
-
+// need change
     const response = await axios.post('http://localhost:8000/reply', {
       bottle_id: selectedAllBottle.bottle_id,
-     sender_id: 'user_test01',     
-  receiver_id: 'user_test02',  
+      sender_id: 'user_test02',     
+      receiver_id: 'user_test01',  
       content: replyContent.value,
       reply_to: null
     })
 
-
-
     console.log('✅ Reply sent:', response.data)
     alert('Reply sent successfully!')
     cancelReply()
-
-
-
 
   } catch (err) {
     console.error('❌ Reply failed:', err)

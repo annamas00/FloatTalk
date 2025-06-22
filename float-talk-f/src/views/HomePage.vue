@@ -18,8 +18,11 @@
             <span>Read Past Bottles</span>
           </div>
         </button>
-      </div>
 
+          <button @click="showChatModal = true" class="btn-action">
+            💬 Chat
+          </button>     
+      </div>
       <!-- user -->
       <div class="flex justify-center pb-4">
         <router-link to="/login" class="profile-btn" title="Profile">
@@ -33,7 +36,6 @@
           <h3 class="text-lg font-bold mb-3" >New Bottle</h3>
 
           <textarea v-model="bottleContent" placeholder="Write your message..." class="input mb-2"></textarea>
-
           <!-- taginpuit -->
           <div class="tag-input mb-2">
             <div v-for="(tag, index) in tagList" :key="index" class="tag-chip">
@@ -47,7 +49,6 @@
               class="input-tag"
             />
           </div>
-
           <input v-model="location" placeholder="Enter location" class="input mb-4" />
 
           <div class="flex justify-end space-x-2">
@@ -57,49 +58,95 @@
         </div>
       </div>
 
+<!-- Chat List Modal -->
+  <div v-if="showChatModal" class="form-modal">
+    <div class="form-box">
+      <h3 class="text-lg font-bold mb-3" >Chat List</h3>  
+      <button @click="showChatModal = false" class="absolute top-3 right-3">✕</button> 
+      <div v-for="chat in chatList" :key="chat.conversation_id" class="mb-6 border-b pb-2">       
+        <button 
+          @click="openConversation(chat.conversation_id)"
+        >
+           <p class="text-black">💬 {{ chat.participants[0] }} and {{ chat.participants[1] }}</p>      
+          <p v-if="chat.first_message">
+            ⏰ {{ formatDate(chat.first_message.timestamp) }}
+            <br />
+            👤 {{ chat.first_message.sender_id }}：🍼 {{ chat.first_message.content }}
+          </p>
+        </button>
+      </div>
+    </div>
+  
 
+    <!-- Chat Detail Modal -->
+    <div v-if="showChatDetailModal" class="form-box">
+      <div class="bg-white p-6 rounded-2xl shadow-lg w-[90%] max-w-lg max-h-[80vh] overflow-auto">
+        <h2 class="text-xl font-bold mb-4 text-center">Chat history</h2>
+        <button @click="showChatDetailModal = false" class="absolute top-4 right-4 text-black text-sm">✕</button>
+        <div v-for="msg in messageList" :key="msg.timestamp" class="mb-4">
+          <p><strong>{{ msg.sender_id }}:</strong> {{ msg.content }}</p>
+          <p class="text-xs text-black">{{ formatDate(msg.timestamp) }}</p>
+        </div>
+      </div>
 
-<!-- All Bottles dropdown -->
-<div class="w-full mt-4">
-  <button @click="toggleAllDropdown" class="btn-action w-full flex justify-between items-center">
-    <span>All Bottles</span>
-    <span>{{ allDropdownOpen ? '▲' : '▼' }}</span>
-  </button>
+         <!-- Reply Button -->
+        <!--   <div class="dialog-reply mt-4">
+            <div v-if="!showReplyInput" class="flex justify-end">
+              <button class="btn-submit" @click="toggleReplyBox(currentBottleId)">Reply</button>
+            </div>
 
-  <div v-if="allDropdownOpen" class="dropdown-list">
-    <div
-      v-for="(bottle, index) in allBottles"
-      :key="index"
-      class="dropdown-item"
-      @click="viewAllBottleDetail(bottle)"
-    >
-      {{ bottle && bottle.content ? bottle.content.slice(0, 20) : '[No Content]' }}
+            <div v-else>
+              <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
+              <div class="flex justify-end mt-2 space-x-2">
+                <button class="btn-cancel" @click="cancelReply">Cancel</button>
+                <button class="btn-submit" @click="sendReply({ bottle_id: currentBottleId } )">Send</button>
+              </div>
+            </div>
+          </div>  -->
+          
     </div>
   </div>
-</div>
 
-<!-- All Bottle Detail Modal -->
-<div v-if="allDetailVisible" class="dialog-overlay">
-  <div class="dialog-box text-black">
-    <div class="dialog-header">
-      <h2 class="dialog-title">📦 Bottle Detail</h2>
-      <button class="dialog-close" @click="closeAllDetailModal">×</button>
-    </div>
+          <!-- All Bottles dropdown -->
+          <div class="w-full mt-4">
+            <button @click="toggleAllDropdown" class="btn-action w-full flex justify-between items-center">
+              <span>All Bottles</span>
+              <span>{{ allDropdownOpen ? '▲' : '▼' }}</span>
+            </button>
 
-    <div class="dialog-body">
-      <p class="dialog-content">{{ selectedAllBottle?.content }}</p>
-      <div class="dialog-tags" v-if="selectedAllBottle?.tags">
-        <span v-for="(tag, idx) in selectedAllBottle.tags" :key="idx" class="tag-chip">
-          {{ tag }}
-        </span>
-      </div>
+            <div v-if="allDropdownOpen" class="dropdown-list">
+              <div
+                v-for="(bottle, index) in allBottles"
+                :key="index"
+                class="dropdown-item"
+                @click="viewAllBottleDetail(bottle)"
+              >
+                {{ bottle && bottle.content ? bottle.content.slice(0, 20) : '[No Content]' }}
+              </div>
+            </div>
+          </div>
+
+        <!-- All Bottle Detail Modal -->
+        <div v-if="allDetailVisible" class="dialog-overlay">
+          <div class="dialog-box text-black">
+            <div class="dialog-header">
+              <h2 class="dialog-title">📦 Bottle Detail</h2>
+              <button class="dialog-close" @click="closeAllDetailModal">×</button>
+            </div>
+
+            <div class="dialog-body">
+              <p class="dialog-content">{{ selectedAllBottle?.content }}</p>
+              <div class="dialog-tags" v-if="selectedAllBottle?.tags">
+                <span v-for="(tag, idx) in selectedAllBottle.tags" :key="idx" class="tag-chip">
+                  {{ tag }}
+                </span>
+              </div>
 
       <!-- Reply Button -->
           <div class="dialog-reply mt-4">
             <div v-if="!showReplyInput" class="flex justify-end">
               <button class="btn-submit" @click="toggleReplyBox(selectedAllBottle?.bottle_id)">Reply</button>
             </div>
-
             <div v-else>
               <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
               <div class="flex justify-end mt-2 space-x-2">
@@ -152,9 +199,7 @@
                 {{ bottle.content.slice(0, 20) }}...
               </div>
             </div>
-
         </div>
-
     </div>
   </div>
 </template>
@@ -167,7 +212,7 @@ import axios from 'axios'
 import markerIcon2x from '../assets/leaflet/marker-icon-2x.png'
 import markerIcon from '../assets/leaflet/marker-icon.png'
 import markerShadow from '../assets/leaflet/marker-shadow.png'
-import { Send, BookOpen, UserCircle } from 'lucide-vue-next'
+import { Send, BookOpen, UserCircle, MessageSquareMore } from 'lucide-vue-next'
 
 
 import {
@@ -200,6 +245,12 @@ onMounted(() => {
 
   fetchAllBottles()
 })
+
+
+onMounted(() => {
+  loadChatList();
+});
+
 import {
   selectedBottle as selectedAllBottle,
   allDetailVisible,
@@ -220,6 +271,39 @@ import {
   loadMessageHistory ,
   sendReply
 } from './replyLogic.js'
+
+
+import { computed } from 'vue'
+
+
+import { watch} from 'vue'
+import { useChatLogic } from './chatLogic.js'
+
+const userId = 'user_test01' // 替换为真实用户ID
+const {
+  showChatModal,
+  showChatDetailModal,
+  chatList,
+  selectedConversation,
+  messageList,
+  loadChatList,
+  openConversation,
+  formatDate
+} = useChatLogic(userId)
+
+onMounted(() => {
+  loadChatList()
+})
+
+const getReceiverId = () => {
+  const conv = chatList.value.find(c => c.conversation_id === selectedConversation.value)
+  return conv?.participants.find(p => p !== userId)
+}
+
+onMounted(() => loadChatList())
+
+
+
 
 
 function formatTimestamp(ts) {
@@ -364,12 +448,15 @@ function readBottle() {
 }
 
 .form-box {
-  background: white;
+  background: rgb(253, 253, 253);
   padding: 0 1.5rem 1.5rem;
   border-radius: 1rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   width: 90%;
   max-width: 400px;
+  max-height: 400px;
+  overflow-y: auto;  
+  color: black
 }
 
 .input {
@@ -598,5 +685,40 @@ h3 {
   box-sizing: border-box;
 }
 
+
+.chat-popup {
+  position: fixed;
+  right: 5%;
+  top: 10%;
+  background: white;
+  padding: 1rem;
+  border-radius: 10px;
+  width: 360px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+
+
+
+.dialog-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog-box {
+  background-color: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 420px;  /* 加这一行很关键 */
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  position: relative;
+  margin: auto;      /* 加这一行确保它水平居中 */
+}
 
 </style>

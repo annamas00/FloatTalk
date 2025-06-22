@@ -7,11 +7,11 @@ from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from typing import Any
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClient,AsyncIOMotorDatabase
 from dotenv import load_dotenv
 import uuid
 import os
-
+from typing import List
 # ------------------ Setup ------------------
 
 app = FastAPI()
@@ -217,13 +217,14 @@ async def get_all_bottles():
 
 @app.post("/reply")
 async def send_reply(data: dict):
+    
     bottle_id = data.get("bottle_id")
     sender_id = data.get("sender_id")
     receiver_id = data.get("receiver_id")
     content = data.get("content")
     if not all([bottle_id, sender_id, receiver_id, content]):
         return {"status": "error", "message": "Missing required fields"}
-
+ 
     conv = await conversations.find_one({"bottle_id": bottle_id})
     if not conv:
         conv_doc = {
@@ -273,6 +274,94 @@ async def get_conversation_messages(bottle_id: str):
             "status": msg.get("status", "sent")
         } async for msg in cursor
     ]}
+
+
+
+@app.get("/conversations/user/{user_id}")
+async def get_user_conversations(user_id: str):
+    try:
+        cursor = conversations.find(
+            {"participants": user_id, "status": "active"}
+        ).sort("last_updated", -1)
+
+        result = []
+
+        async for conv in cursor:
+            conversation_id = conv.get("conversation_id")
+
+            first_msg = await messages.find_one(
+                {"conversation_id": conversation_id},
+                sort=[("timestamp", 1)]
+            )
+
+            result.append({
+                "conversation_id": conversation_id,
+                "bottle_id": conv.get("bottle_id"),
+                "participants": conv.get("participants"),
+                "last_updated": conv.get("last_updated"),
+                "first_message": {
+                    "sender_id": first_msg.get("sender_id") if first_msg else None,
+                    "content": first_msg.get("content") if first_msg else None,
+                    "timestamp": first_msg.get("timestamp") if first_msg else None
+                } if first_msg else None
+            })
+
+        return result
+
+    except Exception as e:
+        print(f"Error in get_user_conversations: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+""" @app.get("/conversation/{conversation_id}", response_model=ConversationResponse)
+def get_conversation(conversation_id: str):
+    convo = conversations.find_one({"conversation_id": conversation_id})
+    if not convo:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    messages = list(messages.find(
+        {"conversation_id": conversation_id},
+        {"_id": 0, "sender_id": 1, "content": 1, "timestamp": 1}
+    ))
+    messages.sort(key=lambda x: x["timestamp"])  
+    return {
+        "conversation_id": conversation_id,
+        "participants": convo["participants"],
+        "messages": messages
+    } """
+
+def get_database() -> AsyncIOMotorDatabase:
+    return db
+
+@app.get("/conversation/{conversation_id}")
+async def get_conversation(conversation_id: str, db: AsyncIOMotorDatabase = Depends(get_database)):
+    conversation = await db.conversations.find_one({"conversation_id": conversation_id})
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    bottle = await db.bottles.find_one({"bottle_id": conversation.get("bottle_id")})
+    if not bottle:
+        raise HTTPException(status_code=404, detail="Bottle not found")
+    
+    cursor = db.messages.find({"conversation_id": conversation_id}).sort("timestamp", 1)
+    messages = []
+    async for msg in cursor:
+        messages.append({
+            "timestamp": msg.get("timestamp"),
+            "sender_id": msg.get("sender_id"),
+            "content": msg.get("content")
+        })
+
+    return {
+        "conversation_id": conversation_id,
+        "participants": conversation.get("participants", []),
+        "messages": messages,
+       "bottle": {
+            "sender_id": bottle.get("sender_id"),
+            "content": bottle.get("content"),
+            "timestamp": bottle.get("bottle_timestamp")
+        },
+    }
 
 # ------------------ Start ------------------
 
