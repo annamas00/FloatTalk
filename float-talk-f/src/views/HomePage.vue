@@ -31,9 +31,7 @@
       </div>
       <!-- user -->
       <div class="flex justify-center pb-4">
-
-      <!-- user  -->
-      <div class= "flex justify-center pb-4">
+      <div class="flex justify-center pb-4">
         <router-link to="/login" class="profile-btn" title="Profile">
           <UserCircle class="w-7 h-7" />
         </router-link>
@@ -300,7 +298,9 @@ import { computed } from 'vue'
 
 
 import { watch} from 'vue'
-import { useChatLogic } from './chatLogic.js'
+import { useChatLogic, 
+  
+ } from './chatLogic.js'
 
 const userId = 'user_test01' // 替换为真实用户ID
 const {

@@ -47,15 +47,15 @@
 <!-- Manuelle Standort-Eingabe im Stil von "New Bottle" -->
 <div v-if="showManualInput" class="form-modal">
   <div class="form-box">
-    <h3 class="text-lg font-bold mb-3">📍 Standort manuell eingeben</h3>
+    <h3 class="text-lg font-bold mb-3">📍 Enter location manually</h3>
 
     <input v-model="manualInput.country" type="text" placeholder="Country *" class="input mb-2" required />
     <input v-model="manualInput.city" type="text" placeholder="City *" class="input mb-2" required />
     <input v-model="manualInput.street" type="text" placeholder="Street (optional)" class="input mb-4" />
 
     <div class="flex justify-end space-x-2">
-      <button class="btn-cancel" @click="showManualInput = false">Abbrechen</button>
-      <button class="btn-submit" @click="geocodeManualLocation">Speichern & Weiter</button>
+      <button class="btn-cancel" @click="showManualInput = false">Exit</button>
+      <button class="btn-submit" @click="geocodeManualLocation">Save & Continue</button>
     </div>
   </div>
 </div>
@@ -89,21 +89,7 @@ const showManualInput = ref(false)
 const manualInput = ref({ country: '', city: '', street: '' })
 
 
- /* onMounted(() => {
-    // Jedes Mal Standort abfragen, auch bei wiederholtem Aufruf
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      const coords = {
-        lat: pos.coords.latitude,
-        lon: pos.coords.longitude
-      }
-      localStorage.setItem('coords', JSON.stringify(coords))
-    },
-    () => {
-      showManualInput.value = true
-    }
-  )
-}) */
+
 
 
 function capitalizeWords(str) {
@@ -127,6 +113,8 @@ async function handleLogin() {
 
      localStorage.removeItem('userLat')
     localStorage.removeItem('userLon')
+     localStorage.removeItem('userLocationText')
+
 
 
      // 📍 Nach erfolgreichem Login: Standortabfrage starten
@@ -151,29 +139,44 @@ async function handleLogin() {
 
       localStorage.setItem('userLocationText', locationText)
     } catch (e) {
-      console.warn('Reverse-Geocoding fehlgeschlagen:', e)
+      console.warn('Reverse-Geocoding failed:', e)
     }
 
     router.push('/home')
   },
       (err) => {
-        console.warn('Standort nicht verfügbar:', err)
+        console.warn('Location not available:', err)
         showManualInput.value = true // ⬅️ Jetzt Modal anzeigen
       },
       { timeout: 5000 }
     )
     
-    alert('✅ Login erfolgreich!')
+    alert('✅ Login successful!')
   } catch (err) {
-    alert('❌ Login fehlgeschlagen!')
+    alert('❌ Login failed!')
     console.error(err)
   }
 }
 
+/* onMounted(() => {
+    // Jedes Mal Standort abfragen, auch bei wiederholtem Aufruf
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const coords = {
+        lat: pos.coords.latitude,
+        lon: pos.coords.longitude
+      }
+      localStorage.setItem('coords', JSON.stringify(coords))
+    },
+    () => {
+      showManualInput.value = true
+    }
+  )
+}) */
 
 async function geocodeManualLocation() {
   if (!manualInput.value.country || !manualInput.value.city) {
-    alert('Bitte Land und Stadt eingeben.')
+    alert('Please enter country and city.')
     return
   }
 
@@ -188,7 +191,7 @@ async function geocodeManualLocation() {
     const data = await res.json()
 
     if (data.length === 0) {
-      alert('Adresse nicht gefunden.')
+      alert('Address not found.')
       return
     }
 
@@ -228,7 +231,7 @@ localStorage.setItem('userLat', parseFloat(lat))
 localStorage.setItem('userLon', parseFloat(lon))
 localStorage.setItem('userCity', detectedCity)*/
 
-    alert('📍 Standort gespeichert!')
+    alert('📍 Location saved!')
     showManualInput.value = false
     router.push({ path: '/home' })
   } catch (err) {
@@ -249,10 +252,10 @@ async function handleRegister() {
       last_name: lastName.value,
       nickname: nickname.value
     })
-    alert('✅ Registrierung erfolgreich! Jetzt einloggen.')
+    alert('✅ Registration successful! Login now.')
     isLogin.value = true
   } catch (err) {
-    alert('❌ Registrierung fehlgeschlagen!')
+    alert('❌ Registration failed!')
     console.error(err)
   }
 }

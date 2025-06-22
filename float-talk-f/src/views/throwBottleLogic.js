@@ -1,5 +1,8 @@
 import { ref } from 'vue'
 import axios from 'axios'
+import { fetchAllBottles } from './allBottlesLogic.js'
+import { fetchMyBottles } from './myBottlesLogic.js'
+
 
 export const showForm = ref(false)
 export const bottleContent = ref('')
@@ -145,6 +148,9 @@ city: city.value
     location.value = ''
     tagList.value = []
     tagInput.value = ''
+       await fetchAllBottles()
+       await fetchMyBottles() // ⬅️ Ergänzen
+
 
     return res.data
   } catch (err) {
@@ -154,12 +160,18 @@ city: city.value
 
 
 export function prepareThrowForm() {
+  
   location.value = '' // alten Wert löschen
   city.value = ''
 
-  
-  localStorage.removeItem('userLocationText')
-localStorage.removeItem('coords') // optional
+  // 🔁 Zuerst versuchen, alten Standorttext wiederherzustellen
+const storedText = localStorage.getItem('userLocationText')
+if (storedText) {
+  location.value = storedText
+  return // keine Neuberechnung nötig
+}
+  //localStorage.removeItem('userLocationText')
+  // localStorage.removeItem('coords') // optional
 
   const storedLat = localStorage.getItem('userLat')
   const storedLon = localStorage.getItem('userLon')
