@@ -186,7 +186,8 @@ async def add_bottle(req: Request):
         "picked_by": None,
         "picked_at": None,
         "reply_enabled": True,
-        "city": data.get("city", "")
+        "city": data.get("city", ""),
+        "visibility_km": data.get("visibility_km", 5)
     }
     await bottles.insert_one(bottle_doc)
     return {"status": "success", "message": "Bottle stored!"}
@@ -224,8 +225,9 @@ async def get_all_bottles():
     async for doc in cursor:          # <- korrektes async-Iterieren
         result.append({
             "bottle_id": doc.get("bottle_id"),
-            "content":   doc.get("content"),
-            "tags":      doc.get("tags", []),
+            "sender_id": doc.get("sender_id"),
+            "content": doc.get("content"),
+            "tags": doc.get("tags", []),
             "timestamp": doc.get("bottle_timestamp"),
             "status":    doc.get("status", "floating"),
             "location":  doc.get("location", {})      # ♦ wichtig für Marker
@@ -262,8 +264,20 @@ async def send_reply(data: dict):
         }
         await conversations.insert_one(conv_doc)
     else:
-        conv_doc = conv
-
+        
+       await conversations.update_one(
+            {"_id": conv["_id"]},
+            {
+                "$addToSet": {
+                    "participants": {"$each": [sender_id, receiver_id]}
+                },
+                "$set": {
+                    "last_updated": datetime.utcnow()
+                }
+            }
+        )
+       conv_doc = await conversations.find_one({"_id": conv["_id"]}) 
+       
     message = {
         "message_id": f"msg_{int(datetime.utcnow().timestamp())}",
         "conversation_id": conv_doc["conversation_id"],

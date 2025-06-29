@@ -68,7 +68,13 @@
   <option :value="240">4 Stunden</option>
   <option :value="1440">24 Stunden</option>
 </select>
-
+      <label class="block mb-1">Visible within:</label>
+      <select v-model="visibilityKm" class="input">
+        <option :value="1">1 km</option>
+        <option :value="3">3 km</option>
+        <option :value="5">5 km</option>
+        <option :value="10">10 km (max)</option>
+      </select>
           <div class="flex justify-end space-x-2">
             <button class="btn-cancel" @click="showForm = false">Cancel</button>
             <button class="btn-submit" @click="submitBottle">Send</button>
@@ -92,7 +98,7 @@
         <button 
           @click="openConversation(chat.conversation_id)"
         >
-           <p class="text-black">💬 {{ chat.participants[0] }} and {{ chat.participants[1] }}</p>      
+           <p class="text-black">💬 {{ chat.participants.join(' and  ') }}</p>      
           <p v-if="chat.first_message">
             ⏰ {{ formatDate(chat.first_message.timestamp) }}
             <br />
@@ -321,7 +327,7 @@ import { useChatLogic,
   
  } from './chatLogic.js'
 
-const userId = 'user_test01' // 替换为真实用户ID
+const userId = 'user_test01'
 const {
   showChatModal,
   showChatDetailModal,
@@ -584,7 +590,7 @@ window.tryOpen = id => {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   width: 90%;
   max-width: 400px;
-  max-height: 400px;
+  max-height: 550px;
   overflow-y: auto;  
   color: black
 }
