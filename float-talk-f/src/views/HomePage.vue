@@ -101,12 +101,12 @@
            <p class="text-black">💬 {{ chat.participants.map(p => p.nickname).join(', ')}}</p>      
           <p v-if="chat.first_message">
             ⏰ {{ formatDate(chat.first_message.timestamp) }}
+          </p>
           <p class="text-sm text-gray-700">
- {{ chat.bottle_sender?.nickname || chat.bottle_sender?.user_id || '未知' }}: {{ chat.preview }}
+ {{ chat.bottle_sender?.nickname || chat.bottle_sender?.user_id || 'Unknown' }}: {{ chat.preview }}
 </p>
 
 
-          </p>
         </button>
       </div>
     </div>
