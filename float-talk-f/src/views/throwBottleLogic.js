@@ -11,8 +11,10 @@ export const tagList = ref([])
 export const tagInput = ref('')
 export const city = ref('')
 export const showSuccessModal = ref(false)
+export const ttlMinutes = ref(60)
 export const userId = localStorage.getItem('user_id')
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
 function capitalizeWords(str) {
   return str
@@ -26,48 +28,42 @@ function capitalizeWords(str) {
 
 
 export function showThrowBottleForm() {
-  // showForm.value = true
-prepareThrowForm()
-  // Hole aktuelle Daten aus localStorage neu
-  const storedLat = localStorage.getItem('userLat')
-  const storedLon = localStorage.getItem('userLon')
-  const storedCoords = localStorage.getItem('coords')
-  const storedText = localStorage.getItem('userLocationText')
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      localStorage.setItem('userLat', pos.coords.latitude)
+      localStorage.setItem('userLon', pos.coords.longitude)
+      reverseGeocode(pos.coords.latitude, pos.coords.longitude)
+    },
+    () => {
+      // Fallback auf gespeicherte Werte
+      prepareThrowForm()
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  )
 
-  // Koordinaten zurücksetzen, falls neu gesetzt wurde
-  if (storedText) {
-    location.value = storedText
-  } else if (storedLat && storedLon) {
-    reverseGeocode(parseFloat(storedLat), parseFloat(storedLon))
-  } else if (storedCoords) {
-    const { lat, lon } = JSON.parse(storedCoords)
-    reverseGeocode(lat, lon)
-  }
+  showForm.value = true
 }
-
-
 
 
 // Reverse-Geocoding für automatische Standortermittlung
 async function reverseGeocode(lat, lon) {
   try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
-    )
-    const data = await response.json()
-const address = data.address || {}
-    const road = address.road || ''
-    const cityName = address.city || address.town || address.village || ''
-    
-    // Wenn Straße vorhanden → Straße + Stadt, sonst nur Stadt
-    const locationText = road
-      ? `${capitalizeWords(road)}, ${capitalizeWords(cityName)}`
-      : capitalizeWords(cityName)
+    const res = await fetch(`${API_BASE}/api/reverse?lat=${lat}&lon=${lon}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+  const a = data.address || {}
+
+  const street   = [a.road, a.house_number].filter(Boolean).join(' ');
+    const locText  = [street, a.postcode, a.city || a.town || a.village, a.country]
+                      .filter(Boolean)
+                      .map(capitalizeWords)
+                      .join(', ');
 
     // Update location + localStorage
-    location.value = locationText
-    city.value = capitalizeWords(cityName)
-    localStorage.setItem('userLocationText', locationText)
+    location.value = locText
+city.value = capitalizeWords(a.city || a.town || a.village || '')
+    localStorage.setItem('userLocationText', locText)
     localStorage.setItem('userLat', lat)
     localStorage.setItem('userLon', lon)
 
@@ -122,9 +118,13 @@ localStorage.setItem('lastBottleLon', storedLon)
     return
   }
 
+  
+  //const now = new Date()
+  //const expireAt = new Date(now.getTime() + ttlMinutes.value * 60000) // z. B. 60 Minuten
 
   try {
-    const res = await axios.post("http://localhost:8000/add_bottle", {
+    const res = await axios.post(`${API_BASE}/add_bottle`, {
+      //"http://localhost:8000/add_bottle", {
       bottle_id: "btl_" + Date.now(),
       sender_id: userId,
       content: bottleContent.value,
@@ -132,12 +132,13 @@ localStorage.setItem('lastBottleLon', storedLon)
       location: storedLat && storedLon
       ? {
           lat: parseFloat(storedLat),
-          lon: parseFloat(storedLon)
-        }
+          lon: parseFloat(storedLon),
+          address : location.value, // <-- neuer Feldname city : city.value
+      }
       : JSON.parse(storedCoords),
 city: city.value
 
-    })
+      })
 
     console.log('✅ Server response:', res.data)
 
@@ -156,40 +157,79 @@ city: city.value
   } catch (err) {
     console.error('❌ Submit failed:', err)
   }
+
+  await fetchAllBottles()   // ruft Watcher → neue Marker
+
 }
 
 
-export function prepareThrowForm() {
+export async function prepareThrowForm() {
   
   location.value = '' // alten Wert löschen
   city.value = ''
 
   // 🔁 Zuerst versuchen, alten Standorttext wiederherzustellen
 const storedText = localStorage.getItem('userLocationText')
-if (storedText) {
-  location.value = storedText
-  return // keine Neuberechnung nötig
-}
-  //localStorage.removeItem('userLocationText')
-  // localStorage.removeItem('coords') // optional
-
   const storedLat = localStorage.getItem('userLat')
   const storedLon = localStorage.getItem('userLon')
   const storedCoords = localStorage.getItem('coords')
 
 
-
-  //if (storedText) {
-    //location.value = storedText
-  //} else
-   if (storedLat && storedLon) {
-    reverseGeocode(parseFloat(storedLat), parseFloat(storedLon))
+  if (storedText) {
+    // Wenn bereits formatierte Adresse vorhanden → verwenden
+    location.value = storedText
+  } else if (!isNaN(storedLat) && !isNaN(storedLon)) {
+    // Wenn Koordinaten einzeln vorhanden → reverse geocoding
+    await reverseGeocode(storedLat, storedLon)
   } else if (storedCoords) {
+    // Wenn Koordinaten als Objekt vorhanden
     const { lat, lon } = JSON.parse(storedCoords)
-    reverseGeocode(lat, lon)
+    await reverseGeocode(lat, lon)
   }
 
   showForm.value = true
 }
 
+// helper – irgendwo in throwBottleLogic.js
+const apiReverse = (lat, lon) =>
+  fetch(`http://127.0.0.1:8000/api/reverse?lat=${lat}&lon=${lon}`)
+    .then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    });
 
+
+
+function canOpenBottle(bottle, userLat, userLon, radius = 50) {
+  if (!bottle?.location) return false
+  const { lat, lon } = bottle.location
+  const toRad = x => (x * Math.PI) / 180
+  const R = 6371000 // m
+  const dLat = toRad(lat - userLat)
+  const dLon = toRad(lon - userLon)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(userLat)) *
+      Math.cos(toRad(lat)) *
+      Math.sin(dLon / 2) ** 2
+  const dist = 2 * R * Math.asin(Math.sqrt(a))
+  return dist <= radius
+}
+
+
+async function openBottle(bottle) {
+  /* aktuelle Nutzerkoordinate holen */
+  navigator.geolocation.getCurrentPosition(pos => {
+    const ok = canOpenBottle(
+      bottle,
+      pos.coords.latitude,
+      pos.coords.longitude
+    )
+    if (!ok) {
+      alert("Du bist zu weit entfernt, um diese Bottle zu öffnen.")
+      return
+    }
+    // jetzt offizielles Detail-Modal anzeigen
+    viewAllBottleDetail(bottle)
+  })
+}

@@ -12,6 +12,12 @@ from dotenv import load_dotenv
 import uuid
 import os
 from typing import List
+# ganz oben bei den anderen imports ergänzen
+import httpx
+from fastapi import APIRouter, HTTPException, Depends
+
+from math import radians, cos, sin, asin, sqrt
+
 # ------------------ Setup ------------------
 
 app = FastAPI()
@@ -175,7 +181,7 @@ async def add_bottle(req: Request):
         "content": data["content"],
         "type": data.get("type", "text"),
         "bottle_timestamp": datetime.utcnow(),
-        "bottle_expire_at": datetime.utcnow() + timedelta(days=2),
+        #"bottle_expire_at": datetime.utcnow() + timedelta(days=2),
         "status": "floating",
         "tags": data.get("tags", []),
         "location": data.get("location", {}),
@@ -200,19 +206,38 @@ async def get_my_bottles(user_id: str):
         } async for doc in cursor
     ]}
 
+#@app.get("/all_bottles")
+#async def get_all_bottles():
+ #   cursor = bottles.find().sort("bottle_timestamp", -1)
+  #  return {"bottles": [
+   #     {
+     #       "bottle_id": doc.get("bottle_id"),
+    #        "content": doc.get("content"),
+      #      "tags": doc.get("tags", []),
+       #     "timestamp": doc.get("bottle_timestamp"),
+        #    "status": doc.get("status", "floating")
+        #} async for doc in cursor
+    #]}
 @app.get("/all_bottles")
 async def get_all_bottles():
     cursor = bottles.find().sort("bottle_timestamp", -1)
-    return {"bottles": [
-        {
+
+    result = []
+    async for doc in cursor:          # <- korrektes async-Iterieren
+        result.append({
             "bottle_id": doc.get("bottle_id"),
             "sender_id": doc.get("sender_id"),
             "content": doc.get("content"),
             "tags": doc.get("tags", []),
             "timestamp": doc.get("bottle_timestamp"),
-            "status": doc.get("status", "floating")
-        } async for doc in cursor
-    ]}
+            "status":    doc.get("status", "floating"),
+            "location":  doc.get("location", {})      # ♦ wichtig für Marker
+        })
+
+    return {"bottles": result}
+
+
+
 
 # ------------------ Conversation ------------------
 
@@ -377,6 +402,57 @@ async def get_conversation(conversation_id: str, db: AsyncIOMotorDatabase = Depe
             "timestamp": bottle.get("bottle_timestamp")
         },
     }
+
+
+# -----------------------------------------
+# Reverse-Geocode-Proxy                   |
+# -----------------------------------------
+
+
+geo = APIRouter()
+
+@geo.get("/api/reverse")               # <-- EIN fester Pfad
+async def reverse_proxy(lat: float, lon: float):
+    url = (
+        "https://nominatim.openstreetmap.org/reverse"
+        f"?format=json&lat={lat}&lon={lon}&addressdetails=1&zoom=18"
+    )
+    headers = {"User-Agent": "FloatTalk/1.0 (you@example.com)"}
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(url, headers=headers)
+        r.raise_for_status()
+        return r.json()
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(e.response.status_code, "Upstream error")
+
+app.include_router(geo)
+
+
+#----nearby bottles----
+
+def _haversine(lat1, lon1, lat2, lon2):
+    # Entfernung in Metern
+    R = 6371000
+    dlat, dlon = map(radians, [lat2-lat1, lon2-lon1])
+    a = sin(dlat/2)**2 + cos(radians(lat1))*cos(radians(lat2))*sin(dlon/2)**2
+    return 2*R*asin(sqrt(a))
+
+@app.get("/nearby_bottles")
+async def nearby(lat: float, lon: float, radius: int = 50):
+    """Alle aktuell gültigen Bottles im Umkreis (radius m)."""
+    now = datetime.utcnow()
+    #cursor = bottles.find({"expire_at": {"$gt": now}})
+    out = []
+    async for b in cursor:
+        loc = b.get("location", {})
+        if "lat" in loc and "lon" in loc:
+            dist = _haversine(lat, lon, loc["lat"], loc["lon"])
+            if dist <= radius:
+                out.append(b)
+    return {"bottles": out}
+
 
 # ------------------ Start ------------------
 

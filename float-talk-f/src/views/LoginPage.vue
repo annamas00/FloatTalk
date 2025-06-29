@@ -42,22 +42,6 @@
         </button>
       </p>
     </div>
-  </div>
-
-<!-- Manuelle Standort-Eingabe im Stil von "New Bottle" -->
-<div v-if="showManualInput" class="form-modal">
-  <div class="form-box">
-    <h3 class="text-lg font-bold mb-3">📍 Enter location manually</h3>
-
-    <input v-model="manualInput.country" type="text" placeholder="Country *" class="input mb-2" required />
-    <input v-model="manualInput.city" type="text" placeholder="City *" class="input mb-2" required />
-    <input v-model="manualInput.street" type="text" placeholder="Street (optional)" class="input mb-4" />
-
-    <div class="flex justify-end space-x-2">
-      <button class="btn-cancel" @click="showManualInput = false">Exit</button>
-      <button class="btn-submit" @click="geocodeManualLocation">Save & Continue</button>
-    </div>
-  </div>
 </div>
 
 
@@ -82,15 +66,8 @@ const lastName = ref('')
 const nickname = ref('')
 
 
-//const locationDenied = ref(false)
 
-
-const showManualInput = ref(false)
-const manualInput = ref({ country: '', city: '', street: '' })
-
-
-
-
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
 function capitalizeWords(str) {
   return str
@@ -104,7 +81,8 @@ function capitalizeWords(str) {
 
 async function handleLogin() {
   try {
-    const res = await axios.post('http://localhost:8000/token', new URLSearchParams({
+    const res = await axios.post(`${API_BASE}/token`,
+      new URLSearchParams({
       username: email.value,
       password: password.value
     }))
@@ -122,14 +100,15 @@ async function handleLogin() {
      // 📍 Nach erfolgreichem Login: Standortabfrage starten
         navigator.geolocation.getCurrentPosition(
   async (pos) => {
-    const lat = parseFloat(pos.coords.latitude.toFixed(4))
-    const lon = parseFloat(pos.coords.longitude.toFixed(4))
+    const lat = pos.coords.latitude          // volle Präzision
+    const lon = pos.coords.longitude
     localStorage.setItem('userLat', lat)
     localStorage.setItem('userLon', lon)
 
     // ➕ Reverse-Geocoding durchführen
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+      const res = await fetch(`${API_BASE}/api/reverse?lat=${lat}&lon=${lon}`)
+                         .then(r => r.json())
       const data = await res.json()
       const address = data.address || {}
       const road = address.road || ''
@@ -140,6 +119,7 @@ async function handleLogin() {
         : capitalizeWords(cityName)
 
       localStorage.setItem('userLocationText', locationText)
+      alert('📍 Location successfully determined!') // ✅ Neue Erfolgsmeldung
     } catch (e) {
       console.warn('Reverse-Geocoding failed:', e)
     }
@@ -147,10 +127,11 @@ async function handleLogin() {
     router.push('/home')
   },
       (err) => {
-        console.warn('Location not available:', err)
-        showManualInput.value = true // ⬅️ Jetzt Modal anzeigen
-      },
-      { timeout: 5000 }
+  console.warn('❌ Location determination failed:', err)
+  alert('❌ Location determination failed. Please allow access or reload the page..')
+  // Kein Redirect – Nutzer bleibt auf Login-Seite
+},
+      { enableHighAccuracy: true, timeout: 10000 }
     )
     
     alert('✅ Login successful!')
@@ -176,72 +157,7 @@ async function handleLogin() {
   )
 }) */
 
-async function geocodeManualLocation() {
-  if (!manualInput.value.country || !manualInput.value.city) {
-    alert('Please enter country and city.')
-    return
-  }
 
-  const query = encodeURIComponent(
-    `${manualInput.value.street ? manualInput.value.street + ', ' : ''}${manualInput.value.city}, ${manualInput.value.country}`
-  )
-
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${query}`
-
-  try {
-    const res = await fetch(url)
-    const data = await res.json()
-
-    if (data.length === 0) {
-      alert('Address not found.')
-      return
-    }
-
-   const lat = data[0].lat
-const lon = data[0].lon
-const address = data[0].address || {}
-/* const detectedCity = address.city || address.town || address.village || manualInput.value.city
-const detectedStreet = address.road || manualInput.value.street
-    // ➤ Location-Feld: Zeige Straße, falls vorhanden – sonst Stadt
-   const locText = detectedStreet ? `${detectedStreet}, ${detectedCity}` : detectedCity
-
-   const readable = manualInput.value.street
-  ? capitalizeWords(manualInput.value.street)
-  : capitalizeWords(manualInput.value.city) */
-  const result = data[0]
-
-const detectedCity = capitalizeWords(address.city || address.town || address.village || '')
-const detectedStreet = capitalizeWords(address.road || '')
-
-const formattedCity = capitalizeWords(detectedCity)
-const formattedStreet = capitalizeWords(detectedStreet)
-
-const locText = formattedStreet
-  ? `${capitalizeWords(formattedStreet)}, ${capitalizeWords(formattedCity)}`
-  : capitalizeWords(formattedCity)
-
-localStorage.setItem('userLocationText', locText)
-localStorage.setItem('userLat', parseFloat(result.lat))
-localStorage.setItem('userLon', parseFloat(result.lon))
-localStorage.setItem('userCity', formattedCity)
-
-/*
-localStorage.setItem('userLocationText', readable)
-
-    localStorage.setItem('userLocationText', locText)
-localStorage.setItem('userLat', parseFloat(lat))
-localStorage.setItem('userLon', parseFloat(lon))
-localStorage.setItem('userCity', detectedCity)*/
-
-    alert('📍 Location saved!')
-    showManualInput.value = false
-    router.push({ path: '/home' })
-  } catch (err) {
-    console.error('Geocoding failed:', err)
-    alert('Fehler bei der Standortsuche.')
-  }
-  
-}
 
 
 
