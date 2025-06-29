@@ -7,7 +7,6 @@
       <div class="flex-1 flex flex-col items-center justify-center space-y-4">
         <!-- Trigger Button -->
       <button @click="prepareThrowForm" class="btn-action mb-4">
-       <!-- <button @click="showForm = true" class="btn-action"> -->
           <div class="btn-inner">
             <Send class="w-5 h-5" />
             <span>Throw a Bottle</span>
@@ -15,12 +14,12 @@
         </button>
 
 
-        <button @click="readBottle" class="btn-action">
+        <!--<button @click="readBottle" class="btn-action">
           <div class="btn-inner">
             <BookOpen class="w-5 h-5" />
             <span>Read Past Bottles</span>
           </div>
-        </button>
+        </button> -->
 
           <button @click="showChatModal = true" class="btn-action">
             <div class="btn-inner">
@@ -60,6 +59,15 @@
             />
           </div>
           <input v-model="location" placeholder="Enter location" class="input mb-4" />
+
+          <!-- Sichtbarkeitsdauer der Bottle -->
+<label class="block mb-1 text-sm font-medium">Visible for:</label>
+<select v-model="ttlMinutes" class="input mb-2">
+  <option :value="30">30 Minuten</option>
+  <option :value="60">1 Stunde</option>
+  <option :value="240">4 Stunden</option>
+  <option :value="1440">24 Stunden</option>
+</select>
 
           <div class="flex justify-end space-x-2">
             <button class="btn-cancel" @click="showForm = false">Cancel</button>
@@ -137,7 +145,7 @@
                 v-for="(bottle, index) in allBottles"
                 :key="index"
                 class="dropdown-item"
-                @click="viewAllBottleDetail(bottle)"
+                @click="openBottle(bottle)"
               >
                 {{ bottle && bottle.content ? bottle.content.slice(0, 20) : '[No Content]' }}
               </div>
@@ -232,6 +240,16 @@ import markerIcon2x from '../assets/leaflet/marker-icon-2x.png'
 import markerIcon from '../assets/leaflet/marker-icon.png'
 import markerShadow from '../assets/leaflet/marker-shadow.png'
 import { Send, BookOpen, UserCircle, MessageSquareMore } from 'lucide-vue-next'
+import { watch } from 'vue'
+import { ttlMinutes } from './throwBottleLogic.js'
+
+
+
+
+// ---------------------------------------------
+// Hilfs‐Array, damit wir alte Marker löschen
+// ---------------------------------------------
+const allBottleMarkers = []
 
 
 import {
@@ -275,7 +293,7 @@ onMounted(() => {
 import {
   selectedBottle as selectedAllBottle,
   allDetailVisible,
-  viewAllBottleDetail,
+  openBottle,
   closeDetailModal as closeAllDetailModal,
   allBottles,
   fetchAllBottles,
@@ -286,7 +304,6 @@ import {
 import {
   showReplyInput,
   replyContent,
- 
   toggleReplyBox,
   cancelReply,
   sendReply2,
@@ -294,10 +311,11 @@ import {
 } from './replyLogic.js'
 
 
+
+
 import { computed } from 'vue'
 
 
-import { watch} from 'vue'
 import { useChatLogic, 
   
  } from './chatLogic.js'
@@ -441,6 +459,37 @@ function goToMap() {
     L.marker(coords).addTo(mapInstance).bindPopup('📦 New Bottle').openPopup()
   }
 }
+
+
+
+// ---------------------------------------------
+// 2)   Auf Änderungen reagieren
+// ---------------------------------------------
+watch(
+  allBottles,
+  bottles => {
+    if (!mapInstance) return          // Karte noch nicht da?
+
+    /* alte Marker entfernen */
+    allBottleMarkers.forEach(m => mapInstance.removeLayer(m))
+    allBottleMarkers.length = 0
+
+    /* neue Marker zeichnen */
+    bottles.forEach(b => {
+      const loc = b.location || {}
+      if (!('lat' in loc && 'lon' in loc)) return
+
+      const marker = L.marker([loc.lat, loc.lon]).addTo(mapInstance)
+        .bindPopup(`
+          <strong>${b.content ?? '[No Content]'}</strong><br/>
+          <small>Tags: ${(b.tags || []).join(', ')}</small>
+        `)
+
+      allBottleMarkers.push(marker)
+    })
+  },
+  { immediate: true }
+)
 
 </script>
 
