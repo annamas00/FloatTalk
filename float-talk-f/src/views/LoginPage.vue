@@ -115,6 +115,8 @@ async function handleLogin() {
     localStorage.removeItem('userLon')
      localStorage.removeItem('userLocationText')
 
+    
+    //localStorage.setItem('user_id', response.data.user_id)
 
 
      // 📍 Nach erfolgreichem Login: Standortabfrage starten

@@ -2,6 +2,8 @@
 import { ref } from 'vue'
 import axios from 'axios'
 
+export const currentBottleSenderId = ref(null)
+
 export function useChatLogic(userId) {
   const showChatModal = ref(false)
   const showChatDetailModal = ref(false)
@@ -40,7 +42,8 @@ export function useChatLogic(userId) {
       messageList.value = res.data.messages || []
       
     currentBottleId.value = res.data.bottle_id || null  // save bottle_id
-console.log('bottle:', currentBottleId.value)
+    currentBottleSenderId.value = res.data.bottle?.sender_id || null 
+    console.log('bottle:', currentBottleId.value)
 
       showChatDetailModal.value = true
     } catch (err) {

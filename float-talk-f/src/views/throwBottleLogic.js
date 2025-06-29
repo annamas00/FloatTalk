@@ -11,7 +11,7 @@ export const tagList = ref([])
 export const tagInput = ref('')
 export const city = ref('')
 export const showSuccessModal = ref(false)
-
+export const userId = localStorage.getItem('user_id')
 
 
 function capitalizeWords(str) {
@@ -126,7 +126,7 @@ localStorage.setItem('lastBottleLon', storedLon)
   try {
     const res = await axios.post("http://localhost:8000/add_bottle", {
       bottle_id: "btl_" + Date.now(),
-      sender_id: "user_test01",
+      sender_id: userId,
       content: bottleContent.value,
       tags: tagList.value,
       location: storedLat && storedLon
