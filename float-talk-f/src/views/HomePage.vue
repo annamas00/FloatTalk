@@ -6,7 +6,7 @@
       <!-- link sidebar -->
       <div class="flex-1 flex flex-col items-center justify-center space-y-4">
         <!-- Trigger Button -->
-      <button @click="prepareThrowForm" class="btn-action mb-4">
+        <button @click="prepareThrowForm" class="btn-action mb-4">
           <div class="btn-inner">
             <Send class="w-5 h-5" />
             <span>Throw a Bottle</span>
@@ -21,146 +21,135 @@
           </div>
         </button> -->
 
-          <button @click="showChatModal = true" class="btn-action">
-            <div class="btn-inner">
+        <button @click="showChatModal = true" class="btn-action">
+          <div class="btn-inner">
             <MessageSquareMore class="w-5 h-5" />
             <span>Chat</span>
-            </div>
-          </button>     
+          </div>
+        </button>
       </div>
       <!-- user -->
       <div class="flex justify-center pb-4">
-      <div class="flex justify-center pb-4">
-        <router-link to="/login" class="profile-btn" title="Profile">
-          <UserCircle class="w-7 h-7" />
-        </router-link>
-      </div>
+        <div class="flex justify-center pb-4">
+          <router-link to="/login" class="profile-btn" title="Profile">
+            <UserCircle class="w-7 h-7" />
+          </router-link>
+        </div>
 
 
-  
 
-      <!-- new windows -->
-      <div v-if="showForm" class="form-modal">
-        <div class="form-box">
-          <h3 class="text-lg font-bold mb-3" >New Bottle</h3>
 
-          <textarea v-model="bottleContent" placeholder="Write your message..." class="input mb-2"></textarea>
-          <!-- taginpuit -->
-          <div class="tag-input mb-2">
-            <div v-for="(tag, index) in tagList" :key="index" class="tag-chip">
-              {{ tag }}
-              <span class="tag-close" @click="removeTag(index)">×</span>
+        <!-- new windows -->
+        <div v-if="showForm" class="form-modal">
+          <div class="form-box">
+            <h3 class="text-lg font-bold mb-3">New Bottle</h3>
+
+            <textarea v-model="bottleContent" placeholder="Write your message..." class="input mb-2"></textarea>
+            <!-- taginpuit -->
+            <div class="tag-input mb-2">
+              <div v-for="(tag, index) in tagList" :key="index" class="tag-chip">
+                {{ tag }}
+                <span class="tag-close" @click="removeTag(index)">×</span>
+              </div>
+              <input v-model="tagInput" @keydown="handleTagKeydown" placeholder="Add tags" class="input-tag" />
             </div>
-            <input
-              v-model="tagInput"
-              @keydown="handleTagKeydown"
-              placeholder="Add tags"
-              class="input-tag"
-            />
-          </div>
-          <input v-model="location" placeholder="Enter location" class="input mb-4" />
+            <input v-model="location" placeholder="Enter location" class="input mb-4" />
 
-          <!-- Sichtbarkeitsdauer der Bottle -->
-<label class="block mb-1 text-sm font-medium">Visible for:</label>
-<select v-model="ttlMinutes" class="input mb-2">
-  <option :value="30">30 Minuten</option>
-  <option :value="60">1 Stunde</option>
-  <option :value="240">4 Stunden</option>
-  <option :value="1440">24 Stunden</option>
-</select>
-      <label class="block mb-1">Visible within:</label>
-      <select v-model="visibilityKm" class="input">
-        <option :value="1">1 km</option>
-        <option :value="3">3 km</option>
-        <option :value="5">5 km</option>
-        <option :value="10">10 km (max)</option>
-      </select>
-          <div class="flex justify-end space-x-2">
-            <button class="btn-cancel" @click="showForm = false">Cancel</button>
-            <button class="btn-submit" @click="submitBottle">Send</button>
+            <!-- Sichtbarkeitsdauer der Bottle -->
+            <label class="block mb-1 text-sm font-medium">Visible for:</label>
+            <select v-model="ttlMinutes" class="input mb-2">
+              <option :value="30">30 minutes</option>
+              <option :value="60">1 hour</option>
+              <option :value="240">4 hours</option>
+              <option :value="1440">24 hours</option>
+            </select>
+            <!-- Visibility Radius -->
+            <label class="block mb-1 text-sm font-medium">Visible within: {{ visibilityKm }} km</label>
+            <div class="relative w-full">
+              <input type="range" v-model="visibilityKm" min="1" max="10" step="1"
+                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+            </div>
+            <label class="block mb-1 text-sm font-medium">Limit readers (optional):</label>
+            <input type="number" v-model="maxReaders" min="1" placeholder="e.g. 3" class="input mb-4" />
+            <div class="flex justify-end space-x-2">
+              <button class="btn-cancel" @click="showForm = false">Cancel</button>
+              <button class="btn-submit" @click="submitBottle">Send</button>
+            </div>
           </div>
         </div>
-</div>
-<div v-if="showSuccessModal" class="modal-overlay">
-  <div class="modal">
-    <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
-    <p class="mb-4">Your message has been thrown and saved on the map.</p>
-    <button  @click="goToMap" class="btn-action">Go back to map</button>
-  </div>
-      </div>
-
-<!-- Chat List Modal -->
-  <div v-if="showChatModal" class="form-modal">
-    <div class="form-box">
-      <h3 class="text-lg font-bold mb-3" >Chat List</h3>  
-      <button @click="showChatModal = false" class="absolute top-3 right-3">✕</button> 
-      <div v-for="chat in chatList" :key="chat.conversation_id" class="mb-6 border-b pb-2">       
-        <button 
-          @click="openConversation(chat.conversation_id)"
-        >
-           <p class="text-black">💬 {{ chat.participants.map(p => p.nickname).join(', ')}}</p>      
-          <p v-if="chat.first_message">
-            ⏰ {{ formatDate(chat.first_message.timestamp) }}
-          </p>
-          <p class="text-sm text-gray-700">
- {{ chat.bottle_sender?.nickname || chat.bottle_sender?.user_id || 'Unknown' }}: {{ chat.preview }}
-</p>
-
-
-        </button>
-      </div>
-    </div>
-  
-
-    <!-- Chat Detail Modal -->
-    <div v-if="showChatDetailModal" class="form-box">
-      <div class="bg-white p-6 rounded-2xl shadow-lg w-[90%] max-w-lg max-h-[80vh] overflow-auto">
-        <h2 class="text-xl font-bold mb-4 text-center">Chat history</h2>
-        <button @click="showChatDetailModal = false" class="absolute top-4 right-4 text-black text-sm">✕</button>
-        <div v-for="msg in messageList" :key="msg.timestamp" class="mb-4">
-          <p class="text-xs text-black">{{ formatDate(msg.timestamp) }}</p>
-          <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
-          
+        <div v-if="showSuccessModal" class="modal-overlay">
+          <div class="modal">
+            <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
+            <p class="mb-4">Your message has been thrown and saved on the map.</p>
+            <button @click="goToMap" class="btn-action">Go back to map</button>
+          </div>
         </div>
-      </div>
 
-         <!-- Reply Button -->
-          <div class="dialog-reply mt-4">
-            <div v-if="!showReplyInput" class="flex justify-end">
-              <button class="btn-submit" @click="toggleReplyBox(currentBottleId)">Reply</button>
-            </div>
+        <!-- Chat List Modal -->
+        <div v-if="showChatModal" class="form-modal">
+          <div class="form-box">
+            <h3 class="text-lg font-bold mb-3">Chat List</h3>
+            <button @click="showChatModal = false" class="absolute top-3 right-3">✕</button>
+            <div v-for="chat in chatList" :key="chat.conversation_id" class="mb-6 border-b pb-2">
+              <button @click="openConversation(chat.conversation_id)">
+                <p class="text-black">💬 {{chat.participants.map(p => p.nickname).join(', ')}}</p>
+                <p v-if="chat.first_message">
+                  ⏰ {{ formatDate(chat.first_message.timestamp) }}
+                </p>
+                <p class="text-sm text-gray-700">
+                  {{ chat.bottle_sender?.nickname || chat.bottle_sender?.user_id || 'Unknown' }}: {{ chat.preview }}
+                </p>
 
-            <div v-else>
-              <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
-              <div class="flex justify-end mt-2 space-x-2">
-                <button class="btn-cancel" @click="cancelReply">Cancel</button>
-               
-                <button class="btn-submit" @click="sendReply2(currentBottleId)">Send</button>
-              </div>
-            </div>
-          </div> 
-          
-    </div>
-  </div>
 
-          <!-- All Bottles dropdown -->
-          <div class="w-full mt-4">
-            <button @click="toggleAllDropdown" class="btn-action w-full flex justify-between items-center">
-              <span>All Bottles</span>
-              <span>{{ allDropdownOpen ? '▲' : '▼' }}</span>
-            </button>
-
-            <div v-if="allDropdownOpen" class="dropdown-list">
-              <div
-                v-for="(bottle, index) in allBottles"
-                :key="index"
-                class="dropdown-item"
-                @click="showBottle(bottle)"
-              >
-                {{ bottle && bottle.content ? bottle.content.slice(0, 20) : '[No Content]' }}
-              </div>
+              </button>
             </div>
           </div>
+
+
+          <!-- Chat Detail Modal -->
+          <div v-if="showChatDetailModal" class="form-box">
+            <div class="bg-white p-6 rounded-2xl shadow-lg w-[90%] max-w-lg max-h-[80vh] overflow-auto">
+              <h2 class="text-xl font-bold mb-4 text-center">Chat history</h2>
+              <button @click="showChatDetailModal = false" class="absolute top-4 right-4 text-black text-sm">✕</button>
+              <div v-for="msg in messageList" :key="msg.timestamp" class="mb-4">
+                <p class="text-xs text-black">{{ formatDate(msg.timestamp) }}</p>
+                <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
+
+              </div>
+            </div>
+
+            <!-- Reply Button -->
+            <div class="dialog-reply mt-4">
+              <div v-if="!showReplyInput" class="flex justify-end">
+                <button class="btn-submit" @click="toggleReplyBox(currentBottleId)">Reply</button>
+              </div>
+
+              <div v-else>
+                <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
+                <div class="flex justify-end mt-2 space-x-2">
+                  <button class="btn-cancel" @click="cancelReply">Cancel</button>
+
+                  <button class="btn-submit" @click="sendReply2(currentBottleId)">Send</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- All Bottles dropdown -->
+        <div class="w-full mt-4">
+          <button @click="toggleAllDropdown" class="btn-action w-full flex justify-between items-center">
+            <span>All Bottles</span>
+            <span>{{ allDropdownOpen ? '▲' : '▼' }}</span>
+          </button>
+
+          <div v-if="allDropdownOpen" class="dropdown-list">
+            <div v-for="(bottle, index) in allBottles" :key="index" class="dropdown-item" @click="showBottle(bottle)">
+              {{ bottle && bottle.content ? bottle.content.slice(0, 20) : '[No Content]' }}
+            </div>
+          </div>
+        </div>
 
         <!-- All Bottle Detail Modal -->
         <div v-if="allDetailVisible" class="dialog-overlay">
@@ -178,47 +167,47 @@
                 </span>
               </div>
 
-      <!-- Reply Button -->
-          <div class="dialog-reply mt-4">
-            <div v-if="!showReplyInput" class="flex justify-end">
-              <button class="btn-submit" @click="toggleReplyBox(selectedAllBottle?.bottle_id)">Reply</button>
-            </div>
-            <div v-else>
-              <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
-              <div class="flex justify-end mt-2 space-x-2">
-                <button class="btn-cancel" @click="cancelReply">Cancel</button>
-                <button class="btn-submit" @click="sendReply(selectedAllBottle)">Send</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-
-          <!-- check my bottle -->
-          <div v-if="detailVisible" class="dialog-overlay">
-            <div class="dialog-box">
-              <div class="dialog-header">
-                <h2 class="dialog-title">📩 Bottle Detail</h2>
-                <button class="dialog-close" @click="closeDetailModal">×</button>
-              </div>
-              <div class="dialog-body">
-                <p class="dialog-content">
-                  {{ selectedBottle && selectedBottle.content }}
-                </p>
-
-                <div class="dialog-tags" v-if="selectedBottle && selectedBottle.tags">
-                  <span v-for="(tag, idx) in selectedBottle.tags" :key="idx" class="tag-chip">
-                    {{ tag }}
-                  </span>
+              <!-- Reply Button -->
+              <div class="dialog-reply mt-4">
+                <div v-if="!showReplyInput" class="flex justify-end">
+                  <button class="btn-submit" @click="toggleReplyBox(selectedAllBottle?.bottle_id)">Reply</button>
+                </div>
+                <div v-else>
+                  <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
+                  <div class="flex justify-end mt-2 space-x-2">
+                    <button class="btn-cancel" @click="cancelReply">Cancel</button>
+                    <button class="btn-submit" @click="sendReply(selectedAllBottle)">Send</button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Dropdown toggle button -->
-       
+
+        <!-- check my bottle -->
+        <div v-if="detailVisible" class="dialog-overlay">
+          <div class="dialog-box">
+            <div class="dialog-header">
+              <h2 class="dialog-title">📩 Bottle Detail</h2>
+              <button class="dialog-close" @click="closeDetailModal">×</button>
+            </div>
+            <div class="dialog-body">
+              <p class="dialog-content">
+                {{ selectedBottle && selectedBottle.content }}
+              </p>
+
+              <div class="dialog-tags" v-if="selectedBottle && selectedBottle.tags">
+                <span v-for="(tag, idx) in selectedBottle.tags" :key="idx" class="tag-chip">
+                  {{ tag }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dropdown toggle button -->
+
         <div class="w-full mt-4">
           <button @click="toggleDropdown" class="btn-action w-full flex justify-between items-center">
             <span>my Bottles</span>
@@ -226,23 +215,19 @@
           </button>
 
           <div v-if="dropdownOpen" class="dropdown-list">
-              <div
-                v-for="(bottle, index) in myBottles"
-                :key="index"
-                class="dropdown-item"
-                @click="viewBottleDetail(bottle)"
-              >
-                {{ bottle.content.slice(0, 20) }}...
-              </div>
+            <div v-for="(bottle, index) in myBottles" :key="index" class="dropdown-item"
+              @click="viewBottleDetail(bottle)">
+              {{ bottle.content.slice(0, 20) }}...
             </div>
+          </div>
         </div>
+      </div>
     </div>
-  </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, nextTick, ref} from 'vue'
+import { onMounted, nextTick, ref } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import axios from 'axios'
@@ -254,7 +239,8 @@ import { watch } from 'vue'
 import { ttlMinutes } from './throwBottleLogic.js'
 
 
-
+const visibilityKm = ref(5)          // required
+const maxReaders = ref(null)
 
 // ---------------------------------------------
 // Hilfs‐Array, damit wir alte Marker löschen
@@ -270,9 +256,9 @@ import {
   tagList,
   tagInput,
   removeTag,
-  handleTagKeydown, 
+  handleTagKeydown,
   prepareThrowForm,
-  showSuccessModal, 
+  showSuccessModal,
   openBottle
 } from './throwBottleLogic.js'
 
@@ -327,9 +313,10 @@ import {
 import { computed } from 'vue'
 
 
-import { useChatLogic, 
-  
- } from './chatLogic.js'
+import {
+  useChatLogic,
+
+} from './chatLogic.js'
 
 const userId = 'user_test01'
 const {
@@ -400,11 +387,11 @@ async function loadBottles() {
 onMounted(async () => {
 
   await nextTick()
-const mapContainer = document.getElementById('map')
-if (!mapContainer) {
-  console.error('❌ Map container not found!')
-  return
-}
+  const mapContainer = document.getElementById('map')
+  if (!mapContainer) {
+    console.error('❌ Map container not found!')
+    return
+  }
 
   if (!mapInstance) {
     mapInstance = L.map(mapContainer).setView([48.1351, 11.5820], 13)
@@ -421,12 +408,12 @@ if (!mapContainer) {
   // 📍 Standort aus localStorage holen
   const savedLat = localStorage.getItem('userLat')
   const savedLon = localStorage.getItem('userLon')
-  
+
 
   if (savedLat && savedLon) {
     const lat = parseFloat(savedLat)
     const lon = parseFloat(savedLon)
- // Marker und Zoom setzen
+    // Marker und Zoom setzen
     const marker = L.marker([lat, lon])
       .addTo(mapInstance)
       .bindPopup('📍 Your Location')
@@ -436,12 +423,12 @@ if (!mapContainer) {
   }
 
   const query = new URLSearchParams(window.location.search)
-const queryLat = query.get('lat')
-const queryLon = query.get('lon')
-const msg = query.get('msg')
-const storedCoords = localStorage.getItem('coords' || '{}')
+  const queryLat = query.get('lat')
+  const queryLon = query.get('lon')
+  const msg = query.get('msg')
+  const storedCoords = localStorage.getItem('coords' || '{}')
 
-if (queryLat && queryLon && msg) {
+  if (queryLat && queryLon && msg) {
     const marker = L.marker([parseFloat(queryLat), parseFloat(queryLon)])
       .addTo(map.value)
       .bindPopup(`<strong>📦 New Bottle:</strong><br/>${msg}`)
@@ -598,7 +585,7 @@ window.tryOpen = id => {
   width: 90%;
   max-width: 400px;
   max-height: 550px;
-  overflow-y: auto;  
+  overflow-y: auto;
   color: black
 }
 
@@ -628,26 +615,27 @@ button {
   background-color: #007bff;
   color: white;
 }
+
 textarea.input {
   flex-grow: 1;
-  resize: vertical; 
+  resize: vertical;
   min-height: 100px;
 }
 
 .tag-input {
   width: 100%;
-  padding: 0.5rem;               
-  margin-bottom: 0.5rem;         
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
   border: 1px solid #ccc;
   border-radius: 0.5rem;
   background-color: #f9f9f9;
-  font-size: 1rem;               
+  font-size: 1rem;
   box-sizing: border-box;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
-  min-height: 44px;              
+  min-height: 44px;
 }
 
 
@@ -698,7 +686,8 @@ h3 {
 
 .modal-overlay {
   position: fixed;
-  top: 0; left: 0;
+  top: 0;
+  left: 0;
   width: 100vw;
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.4);
@@ -731,10 +720,13 @@ h3 {
 .modal-actions {
   text-align: right;
 }
+
 .dialog-overlay {
   position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 999;
   display: flex;
@@ -748,7 +740,7 @@ h3 {
   width: 90%;
   max-width: 420px;
   padding: 1.5rem;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   position: relative;
 }
 
@@ -794,6 +786,7 @@ h3 {
   padding: 0.3rem 0.75rem;
   font-size: 0.8rem;
 }
+
 .dialog-box,
 .dialog-title,
 .dialog-content,
@@ -804,18 +797,19 @@ h3 {
 
 
 .dialog-tags .tag-chip {
-  background-color: #e5e7eb; 
-  color: #111827; 
+  background-color: #e5e7eb;
+  color: #111827;
 }
 
 
 .dropdown-item {
-  color: #f9fafb; 
+  color: #f9fafb;
   padding: 0.4rem 0.6rem;
   cursor: pointer;
 }
+
 .dropdown-item:hover {
-  background-color: #4b5563; 
+  background-color: #4b5563;
 }
 
 .reply-input {
@@ -832,7 +826,8 @@ h3 {
 
 
 .modal {
-  background-color: white; /* ❗ weißer Hintergrund */
+  background-color: white;
+  /* ❗ weißer Hintergrund */
   color: black;
   padding: 2rem;
   border-radius: 8px;
@@ -861,15 +856,17 @@ h3 {
   padding: 1rem;
   border-radius: 10px;
   width: 360px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
 
 
 .dialog-overlay {
   position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 999;
   display: flex;
@@ -882,10 +879,11 @@ h3 {
   border-radius: 1rem;
   padding: 1.5rem;
   width: 90%;
-  max-width: 420px;  /* 加这一行很关键 */
-  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  max-width: 420px;
+  /* 加这一行很关键 */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   position: relative;
-  margin: auto;      /* 加这一行确保它水平居中 */
+  margin: auto;
+  /* 加这一行确保它水平居中 */
 }
-
 </style>
