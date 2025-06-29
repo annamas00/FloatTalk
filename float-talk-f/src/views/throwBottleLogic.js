@@ -191,17 +191,6 @@ const storedText = localStorage.getItem('userLocationText')
 }
 
 
-
-const apiReverse = (lat, lon) =>
-  fetch(`http://127.0.0.1:8000/api/reverse?lat=${lat}&lon=${lon}`)
-    .then(r => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.json();
-    });
-
-
-
-
 /* ---------- Haversine & Entfernungs-Check ---------- */
 export function canOpenBottle(bottle, userLat, userLon, radius = 50) {
   if (!bottle?.location) return false

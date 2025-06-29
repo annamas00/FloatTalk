@@ -34,7 +34,6 @@ export async function showBottle(bottle) {
   allDetailVisible.value = true
   //await loadMessageHistory(bottle.bottle_id)  
 }
-
 // Close modal
 export function closeDetailModal() {
   allDetailVisible.value = false

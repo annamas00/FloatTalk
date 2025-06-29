@@ -388,8 +388,6 @@ async function loadBottles() {
   })
 }
 
-
-
 onMounted(async () => {
 
   await nextTick()

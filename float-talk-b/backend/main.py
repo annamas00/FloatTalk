@@ -410,7 +410,7 @@ async def get_conversation(conversation_id: str, db: AsyncIOMotorDatabase = Depe
 
 geo = APIRouter()
 
-@geo.get("/api/reverse")               # <-- EIN fester Pfad
+@geo.get("/api/reverse")              
 async def reverse_proxy(lat: float, lon: float):
     url = (
         "https://nominatim.openstreetmap.org/reverse"
