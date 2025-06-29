@@ -190,7 +190,8 @@ const storedText = localStorage.getItem('userLocationText')
   showForm.value = true
 }
 
-// helper – irgendwo in throwBottleLogic.js
+
+
 const apiReverse = (lat, lon) =>
   fetch(`http://127.0.0.1:8000/api/reverse?lat=${lat}&lon=${lon}`)
     .then(r => {
@@ -200,11 +201,13 @@ const apiReverse = (lat, lon) =>
 
 
 
-function canOpenBottle(bottle, userLat, userLon, radius = 50) {
+
+/* ---------- Haversine & Entfernungs-Check ---------- */
+export function canOpenBottle(bottle, userLat, userLon, radius = 50) {
   if (!bottle?.location) return false
   const { lat, lon } = bottle.location
-  const toRad = x => (x * Math.PI) / 180
-  const R = 6371000 // m
+  const toRad = deg => (deg * Math.PI) / 180
+  const R = 6371000          // Erdradius in m
   const dLat = toRad(lat - userLat)
   const dLon = toRad(lon - userLon)
   const a =
@@ -216,20 +219,26 @@ function canOpenBottle(bottle, userLat, userLon, radius = 50) {
   return dist <= radius
 }
 
-
-async function openBottle(bottle) {
-  /* aktuelle Nutzerkoordinate holen */
-  navigator.geolocation.getCurrentPosition(pos => {
-    const ok = canOpenBottle(
-      bottle,
-      pos.coords.latitude,
-      pos.coords.longitude
-    )
-    if (!ok) {
-      alert("Du bist zu weit entfernt, um diese Bottle zu öffnen.")
-      return
-    }
-    // jetzt offizielles Detail-Modal anzeigen
-    viewAllBottleDetail(bottle)
-  })
+/* ---------- Öffnen-Versuch ---------- */
+export function openBottle(bottle, onSuccess) {
+  // onSuccess = Callback, das dein Dialog / Reply-Modal öffnet
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const near = canOpenBottle(
+        bottle,
+        pos.coords.latitude,
+        pos.coords.longitude
+      )
+      if (!near) {
+        alert('🚫 Du bist zu weit entfernt (~50 m Radius).')
+        return
+      }
+      onSuccess && onSuccess(bottle)   // z. B. viewBottleDetail(bottle)
+    },
+    err => {
+      console.warn('Geolocation-Fehler:', err)
+      alert('Standort konnte nicht bestimmt werden.')
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  )
 }

@@ -29,7 +29,7 @@ export async function fetchAllBottles() {
 }
 
 // Open modal to show one bottle
-export async function openBottle(bottle) {
+export async function showBottle(bottle) {
   selectedBottle.value = bottle
   allDetailVisible.value = true
   //await loadMessageHistory(bottle.bottle_id)  

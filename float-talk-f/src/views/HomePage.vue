@@ -145,7 +145,7 @@
                 v-for="(bottle, index) in allBottles"
                 :key="index"
                 class="dropdown-item"
-                @click="openBottle(bottle)"
+                @click="showBottle(bottle)"
               >
                 {{ bottle && bottle.content ? bottle.content.slice(0, 20) : '[No Content]' }}
               </div>
@@ -262,7 +262,8 @@ import {
   removeTag,
   handleTagKeydown, 
   prepareThrowForm,
-  showSuccessModal
+  showSuccessModal, 
+  openBottle
 } from './throwBottleLogic.js'
 
 import {
@@ -293,7 +294,7 @@ onMounted(() => {
 import {
   selectedBottle as selectedAllBottle,
   allDetailVisible,
-  openBottle,
+  showBottle,
   closeDetailModal as closeAllDetailModal,
   allBottles,
   fetchAllBottles,
@@ -481,15 +482,32 @@ watch(
 
       const marker = L.marker([loc.lat, loc.lon]).addTo(mapInstance)
         .bindPopup(`
-          <strong>${b.content ?? '[No Content]'}</strong><br/>
-          <small>Tags: ${(b.tags || []).join(', ')}</small>
-        `)
+  <small>Tags: ${(b.tags || []).join(', ')}</small><br/>
+  <button onclick="window.replyToBottle('${b.bottle_id}')">💬 Reply</button>
+`)
+
 
       allBottleMarkers.push(marker)
     })
   },
   { immediate: true }
 )
+
+window.replyToBottle = (bottleId) => {
+  const bottle = allBottles.value.find(b => b.bottle_id === bottleId)
+  if (bottle) {
+    viewBottleDetail(bottle)
+  } else {
+    alert('Bottle not found')
+  }
+}
+
+window.tryOpen = id => {
+  const bottle = allBottles.value.find(b => b.bottle_id === id)
+  if (bottle) {
+    openBottle(bottle, viewBottleDetail)   // Callback öffnet Modal
+  }
+}
 
 </script>
 

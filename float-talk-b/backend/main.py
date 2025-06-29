@@ -12,10 +12,8 @@ from dotenv import load_dotenv
 import uuid
 import os
 from typing import List
-# ganz oben bei den anderen imports ergänzen
 import httpx
 from fastapi import APIRouter, HTTPException, Depends
-
 from math import radians, cos, sin, asin, sqrt
 
 # ------------------ Setup ------------------
