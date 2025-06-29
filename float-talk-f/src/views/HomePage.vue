@@ -98,7 +98,7 @@
         <button 
           @click="openConversation(chat.conversation_id)"
         >
-           <p class="text-black">💬 {{ chat.participants[0] }} and {{ chat.participants[1] }}</p>      
+           <p class="text-black">💬 {{ chat.participants.join(' and  ') }}</p>      
           <p v-if="chat.first_message">
             ⏰ {{ formatDate(chat.first_message.timestamp) }}
             <br />
@@ -326,7 +326,7 @@ import { useChatLogic,
   
  } from './chatLogic.js'
 
-const userId = 'user_test01' // 替换为真实用户ID
+const userId = 'user_test01'
 const {
   showChatModal,
   showChatDetailModal,

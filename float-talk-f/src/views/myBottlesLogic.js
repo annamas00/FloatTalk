@@ -8,6 +8,8 @@ export function toggleDropdown() {
   dropdownOpen.value = !dropdownOpen.value
 }
 
+
+
 // All bottles data
 export const myBottles = ref([])
 
@@ -15,11 +17,13 @@ export const myBottles = ref([])
 export const detailVisible = ref(false)
 export const selectedBottle = ref(null)
 
-// Fetch all bottles (no user restriction)
+// Fetch user bottles 
 export async function fetchMyBottles() {
   try {
+     const userId = localStorage.getItem('user_id')
     const res = await axios.get('http://localhost:8000/my_bottles', {
-      params: { user_id: 'user_test01' }
+      
+      params: { user_id: userId}
     })
     console.log('📥 Bottles loaded:', res.data.bottles)
     myBottles.value = res.data.bottles

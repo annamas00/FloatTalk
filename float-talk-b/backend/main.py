@@ -227,8 +227,9 @@ async def get_all_bottles():
     async for doc in cursor:          # <- korrektes async-Iterieren
         result.append({
             "bottle_id": doc.get("bottle_id"),
-            "content":   doc.get("content"),
-            "tags":      doc.get("tags", []),
+            "sender_id": doc.get("sender_id"),
+            "content": doc.get("content"),
+            "tags": doc.get("tags", []),
             "timestamp": doc.get("bottle_timestamp"),
             "status":    doc.get("status", "floating"),
             "location":  doc.get("location", {})      # ♦ wichtig für Marker
@@ -265,8 +266,20 @@ async def send_reply(data: dict):
         }
         await conversations.insert_one(conv_doc)
     else:
-        conv_doc = conv
-
+        
+       await conversations.update_one(
+            {"_id": conv["_id"]},
+            {
+                "$addToSet": {
+                    "participants": {"$each": [sender_id, receiver_id]}
+                },
+                "$set": {
+                    "last_updated": datetime.utcnow()
+                }
+            }
+        )
+       conv_doc = await conversations.find_one({"_id": conv["_id"]}) 
+       
     message = {
         "message_id": f"msg_{int(datetime.utcnow().timestamp())}",
         "conversation_id": conv_doc["conversation_id"],

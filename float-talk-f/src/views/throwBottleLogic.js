@@ -12,7 +12,7 @@ export const tagInput = ref('')
 export const city = ref('')
 export const showSuccessModal = ref(false)
 export const ttlMinutes = ref(60)
-
+export const userId = localStorage.getItem('user_id')
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
@@ -126,7 +126,7 @@ localStorage.setItem('lastBottleLon', storedLon)
     const res = await axios.post(`${API_BASE}/add_bottle`, {
       //"http://localhost:8000/add_bottle", {
       bottle_id: "btl_" + Date.now(),
-      sender_id: "user_test01",
+      sender_id: userId,
       content: bottleContent.value,
       tags: tagList.value,
       location: storedLat && storedLon
