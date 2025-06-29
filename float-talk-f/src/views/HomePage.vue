@@ -98,11 +98,14 @@
         <button 
           @click="openConversation(chat.conversation_id)"
         >
-           <p class="text-black">💬 {{ chat.participants.join(' and  ') }}</p>      
+           <p class="text-black">💬 {{ chat.participants.map(p => p.nickname).join(', ')}}</p>      
           <p v-if="chat.first_message">
             ⏰ {{ formatDate(chat.first_message.timestamp) }}
-            <br />
-            👤 {{ chat.first_message.sender_id }}：🍼 {{ chat.first_message.content }}
+          <p class="text-sm text-gray-700">
+ {{ chat.bottle_sender?.nickname || chat.bottle_sender?.user_id || '未知' }}: {{ chat.preview }}
+</p>
+
+
           </p>
         </button>
       </div>
@@ -115,8 +118,9 @@
         <h2 class="text-xl font-bold mb-4 text-center">Chat history</h2>
         <button @click="showChatDetailModal = false" class="absolute top-4 right-4 text-black text-sm">✕</button>
         <div v-for="msg in messageList" :key="msg.timestamp" class="mb-4">
-          <p><strong>{{ msg.sender_id }}:</strong> {{ msg.content }}</p>
           <p class="text-xs text-black">{{ formatDate(msg.timestamp) }}</p>
+          <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
+          
         </div>
       </div>
 
@@ -336,7 +340,7 @@ const {
   messageList,
   loadChatList,
   openConversation,
-  formatDate,
+  //formatDate,
   currentBottleId
 } = useChatLogic(userId)
 
@@ -352,9 +356,14 @@ const getReceiverId = () => {
 onMounted(() => loadChatList())
 
 
+const formatDate = (str) => {
+  if (!str) return ''
 
+  const date = new Date(str)
+  date.setHours(date.getHours() + 2)  // utc +2
 
-
+  return date.toLocaleString()
+}
 
 
 

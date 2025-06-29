@@ -93,8 +93,15 @@ async function handleLogin() {
     localStorage.removeItem('userLon')
      localStorage.removeItem('userLocationText')
 
-    
-    //localStorage.setItem('user_id', response.data.user_id)
+    //get user id
+    const meRes = await axios.get(`${API_BASE}/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    const { user_id, nickname } = meRes.data
+    localStorage.setItem('user_id', user_id)
+    localStorage.setItem('nickname', nickname)
 
 
      // 📍 Nach erfolgreichem Login: Standortabfrage starten

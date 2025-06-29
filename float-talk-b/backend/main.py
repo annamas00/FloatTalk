@@ -16,6 +16,8 @@ import httpx
 from fastapi import APIRouter, HTTPException, Depends
 from math import radians, cos, sin, asin, sqrt
 
+
+
 # ------------------ Setup ------------------
 
 app = FastAPI()
@@ -326,17 +328,42 @@ async def get_user_conversations(user_id: str):
 
         async for conv in cursor:
             conversation_id = conv.get("conversation_id")
+            bottle_id = conv.get("bottle_id")
+            
+            bottle_doc = await bottles.find_one({"bottle_id": bottle_id})
+            bottle_preview = bottle_doc.get("content") if bottle_doc else None
+
+            sender_id = bottle_doc.get("sender_id") if bottle_doc else None
+            sender_doc = await users.find_one({"user_id": sender_id}) if sender_id else None
+            sender_nickname = sender_doc.get("nickname") if sender_doc else None
+
+           
 
             first_msg = await messages.find_one(
                 {"conversation_id": conversation_id},
                 sort=[("timestamp", 1)]
             )
 
+            participant_ids = conv.get("participants", [])
+            participants_info = []
+
+            for pid in participant_ids:
+                user_doc = await users.find_one({"user_id": pid})
+                participants_info.append({
+                    "user_id": pid,
+                    "nickname": user_doc.get("nickname") if user_doc else None
+                })
+
             result.append({
                 "conversation_id": conversation_id,
                 "bottle_id": conv.get("bottle_id"),
-                "participants": conv.get("participants"),
+                "participants": participants_info,  # user_id + nickname
                 "last_updated": conv.get("last_updated"),
+                "preview": bottle_preview,
+                "bottle_sender": {
+                    "user_id": sender_id,
+                    "nickname": sender_nickname or sender_id
+                                                    },
                 "first_message": {
                     "sender_id": first_msg.get("sender_id") if first_msg else None,
                     "content": first_msg.get("content") if first_msg else None,
@@ -349,7 +376,6 @@ async def get_user_conversations(user_id: str):
     except Exception as e:
         print(f"Error in get_user_conversations: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
-
 
 """ @app.get("/conversation/{conversation_id}", response_model=ConversationResponse)
 def get_conversation(conversation_id: str):
@@ -373,6 +399,7 @@ def get_database() -> AsyncIOMotorDatabase:
 
 @app.get("/conversation/{conversation_id}")
 async def get_conversation(conversation_id: str, db: AsyncIOMotorDatabase = Depends(get_database)):
+   
     conversation = await db.conversations.find_one({"conversation_id": conversation_id})
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
@@ -380,13 +407,22 @@ async def get_conversation(conversation_id: str, db: AsyncIOMotorDatabase = Depe
     bottle = await db.bottles.find_one({"bottle_id": conversation.get("bottle_id")})
     if not bottle:
         raise HTTPException(status_code=404, detail="Bottle not found")
+
+   
+    user_docs = db.users.find({})
+    user_map = {}
+    async for user in user_docs:
+        user_map[user.get("user_id")] = user.get("nickname", user.get("user_id"))
+
     
     cursor = db.messages.find({"conversation_id": conversation_id}).sort("timestamp", 1)
     messages = []
     async for msg in cursor:
+        sender_id = msg.get("sender_id")
         messages.append({
             "timestamp": msg.get("timestamp"),
-            "sender_id": msg.get("sender_id"),
+            "sender_id": sender_id,
+            "sender_nickname": user_map.get(sender_id, sender_id),  
             "content": msg.get("content")
         })
 
@@ -395,11 +431,12 @@ async def get_conversation(conversation_id: str, db: AsyncIOMotorDatabase = Depe
         "participants": conversation.get("participants", []),
         "messages": messages,
         "bottle_id": conversation.get("bottle_id"),
-       "bottle": {
+        "bottle": {
             "sender_id": bottle.get("sender_id"),
+            "sender_nickname": user_map.get(bottle.get("sender_id"), bottle.get("sender_id")),  
             "content": bottle.get("content"),
             "timestamp": bottle.get("bottle_timestamp")
-        },
+        }
     }
 
 

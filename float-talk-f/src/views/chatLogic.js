@@ -4,7 +4,8 @@ import axios from 'axios'
 
 export const currentBottleSenderId = ref(null)
 
-export function useChatLogic(userId) {
+
+export function useChatLogic() {
   const showChatModal = ref(false)
   const showChatDetailModal = ref(false)
 
@@ -12,27 +13,32 @@ export function useChatLogic(userId) {
   const selectedConversation = ref(null)
   const messageList = ref([])
   const currentBottleId = ref(null) 
+  const userId = localStorage.getItem('user_id')
 
-  const loadChatList = async () => {
-    try {
-      const res = await axios.get(`http://localhost:8000/conversations/user/${userId}`)
-      chatList.value = res.data || []
+    const loadChatList = async () => {
+  try {
+    const res = await axios.get(`http://localhost:8000/conversations/user/${userId}`)
+    chatList.value = res.data || []
 
-      // fetch first messages for preview
-      for (let convo of chatList.value) {
-        const res = await axios.get(`http://localhost:8000/conversation/${convo.conversation_id}`)
-        //convo.first_message = msgRes.data.messages?.[0] || null
-        convo.first_message = {
-        sender_id: res.data.bottle?.sender_id,
-        content: res.data.bottle?.content,
-        timestamp: res.data.bottle?.timestamp
-}
+    
+    for (let convo of chatList.value) {
+      convo.first_message = convo.first_message || {
+        sender_id: null,
+        content: '',
+        timestamp: null
       }
-
-    } catch (err) {
-      console.error('Failed to load chat list:', err)
     }
+
+ console.log('userid:', userId)
+
+
+
+  } catch (err) {
+    console.error('❌ Failed to load chat list:', err)
   }
+}
+
+
 
   const openConversation = async (conversationId) => {
     selectedConversation.value = conversationId
@@ -46,15 +52,16 @@ export function useChatLogic(userId) {
     console.log('bottle:', currentBottleId.value)
 
       showChatDetailModal.value = true
+
     } catch (err) {
       console.error('Failed to load conversation:', err)
     }
   }
 
-  const formatDate = (str) => {
+  /* const formatDate = (str) => {
     if (!str) return ''
     return new Date(str).toLocaleString()
-  }
+  } */
 
   return {
     showChatModal,
@@ -64,7 +71,7 @@ export function useChatLogic(userId) {
     messageList,
     loadChatList,
     openConversation,
-    formatDate,
+    //formatDate,
     currentBottleId
   }
 }
