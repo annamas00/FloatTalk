@@ -188,7 +188,8 @@ async def add_bottle(req: Request):
         "picked_by": None,
         "picked_at": None,
         "reply_enabled": True,
-        "city": data.get("city", "")
+        "city": data.get("city", ""),
+        "visibility_km": data.get("visibility_km", 5)
     }
     await bottles.insert_one(bottle_doc)
     return {"status": "success", "message": "Bottle stored!"}

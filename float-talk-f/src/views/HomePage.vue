@@ -68,7 +68,13 @@
   <option :value="240">4 Stunden</option>
   <option :value="1440">24 Stunden</option>
 </select>
-
+      <label class="block mb-1">Visible within:</label>
+      <select v-model="visibilityKm" class="input">
+        <option :value="1">1 km</option>
+        <option :value="3">3 km</option>
+        <option :value="5">5 km</option>
+        <option :value="10">10 km (max)</option>
+      </select>
           <div class="flex justify-end space-x-2">
             <button class="btn-cancel" @click="showForm = false">Cancel</button>
             <button class="btn-submit" @click="submitBottle">Send</button>
@@ -566,7 +572,7 @@ watch(
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   width: 90%;
   max-width: 400px;
-  max-height: 400px;
+  max-height: 550px;
   overflow-y: auto;  
   color: black
 }

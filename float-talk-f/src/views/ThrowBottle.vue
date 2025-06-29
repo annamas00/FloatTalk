@@ -9,8 +9,10 @@
       <label class="block mb-1">Write a message:</label>
       <textarea v-model="message" class="input" placeholder="Your message..."></textarea>
     </div>
+    
     <button @click="sendBottle" class="btn-action">Send</button>
   </div>
+
   <!-- Success Modal -->
 <!--<div v-if="showSuccessModal" class="modal-overlay">
   <div class="modal-box">
@@ -37,6 +39,7 @@ import axios from 'axios'
 import { getOrCreateUserId } from '../auth.js'
 import { useRouter } from 'vue-router'
 
+const visibilityKm = ref(5)
 const locationDisplay = ref('Getting location...')
 const location = ref({ lat: null, lon: null })
 const message = ref('')
@@ -71,7 +74,8 @@ async function sendBottle() {
       message: message.value,
       time: now.toISOString(),
       duration_until: durationEnd.toISOString(),
-      location: location.value
+      location: location.value,
+      visibility_km: visibilityKm.value
     }
   })
 
