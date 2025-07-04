@@ -4,9 +4,9 @@
       <h2>{{ isLogin ? 'Login' : 'Register' }}</h2>
 
       <form @submit.prevent="isLogin ? handleLogin() : handleRegister()" class="form-wrapper">
-
+        
         <!-- Registration-only fields -->
-        <template v-if="!isLogin">
+        <div v-if="!isLogin">
           <div class="input-group">
             <span class="input-icon">👤</span>
             <input v-model="firstName" type="text" placeholder="First Name" required />
@@ -19,7 +19,7 @@
             <span class="input-icon">🏷️</span>
             <input v-model="nickname" type="text" placeholder="Nickname" required />
           </div>
-        </template>
+        </div>
 
         <!-- Always visible fields -->
         <div class="input-group">
@@ -42,10 +42,7 @@
         </button>
       </p>
     </div>
-</div>
-
-
-
+  </div>
 </template>
 
 
@@ -164,6 +161,18 @@ async function handleLogin() {
   )
 }) */
 
+onMounted(() => {
+  const token = localStorage.getItem('token')
+  if (token) {
+    router.push('/home')
+    return
+  }
+
+  // Clear login state just in case
+  email.value = ''
+  password.value = ''
+  isLogin.value = true
+})
 
 
 
