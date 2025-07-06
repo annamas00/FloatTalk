@@ -1,6 +1,5 @@
 import { ref } from 'vue'
 import axios from 'axios'
-import { fetchAllBottles } from './allBottlesLogic.js'
 import { fetchMyBottles } from './myBottlesLogic.js'
 
 
@@ -33,6 +32,7 @@ export function showThrowBottleForm() {
       localStorage.setItem('userLat', pos.coords.latitude)
       localStorage.setItem('userLon', pos.coords.longitude)
       reverseGeocode(pos.coords.latitude, pos.coords.longitude)
+      loadNearbyBottles()
     },
     () => {
       // Fallback auf gespeicherte Werte
@@ -101,7 +101,7 @@ export function removeTag(index) {
   tagList.value.splice(index, 1)
 }
 
-export async function submitBottle() {
+export async function submitBottle(refreshNearby) {
   
   console.log('content:', bottleContent.value)
   console.log('tags:', tagList.value)
@@ -124,7 +124,6 @@ localStorage.setItem('lastBottleLon', storedLon)
 
   try {
     const res = await axios.post(`${API_BASE}/add_bottle`, {
-      //"http://localhost:8000/add_bottle", {
       bottle_id: "btl_" + Date.now(),
       sender_id: userId,
       content: bottleContent.value,
@@ -149,7 +148,10 @@ city: city.value
     location.value = ''
     tagList.value = []
     tagInput.value = ''
-       await fetchAllBottles()
+        if (refreshNearby) {
+      await refreshNearby()
+    }
+
        await fetchMyBottles() // ⬅️ Ergänzen
 
 
@@ -158,7 +160,6 @@ city: city.value
     console.error('❌ Submit failed:', err)
   }
 
-  await fetchAllBottles()   // ruft Watcher → neue Marker
 
 }
 

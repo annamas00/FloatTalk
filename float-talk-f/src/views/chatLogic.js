@@ -5,6 +5,7 @@ import axios from 'axios'
 export const currentBottleSenderId = ref(null)
 
 
+
 export function useChatLogic() {
   const showChatModal = ref(false)
   const showChatDetailModal = ref(false)
@@ -49,19 +50,22 @@ export function useChatLogic() {
       
     currentBottleId.value = res.data.bottle_id || null  // save bottle_id
     currentBottleSenderId.value = res.data.bottle?.sender_id || null 
+     
     console.log('bottle:', currentBottleId.value)
+   
 
       showChatDetailModal.value = true
-
+showReplyInput.value = true 
     } catch (err) {
       console.error('Failed to load conversation:', err)
     }
   }
 
-  /* const formatDate = (str) => {
-    if (!str) return ''
-    return new Date(str).toLocaleString()
-  } */
+
+  
+const formatDate = isoToBerlin
+
+
 
   return {
     showChatModal,
@@ -71,7 +75,7 @@ export function useChatLogic() {
     messageList,
     loadChatList,
     openConversation,
-    //formatDate,
+    formatDate,
     currentBottleId
   }
 }

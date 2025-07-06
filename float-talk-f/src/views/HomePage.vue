@@ -73,7 +73,7 @@
             <input type="number" v-model="maxReaders" min="1" placeholder="e.g. 3" class="input mb-4" />
             <div class="flex justify-end space-x-2">
               <button class="btn-cancel" @click="showForm = false">Cancel</button>
-              <button class="btn-submit" @click="submitBottle">Send</button>
+              <button class="btn-submit" @click="submitBottle(loadNearbyBottles)">Send</button>
             </div>
           </div>
         </div>
@@ -117,6 +117,7 @@
 
               </div>
             </div>
+          
 
             <!-- Reply Button -->
             <div class="dialog-reply mt-4">
@@ -238,6 +239,9 @@ import { Send, BookOpen, UserCircle, MessageSquareMore } from 'lucide-vue-next'
 import { watch } from 'vue'
 import { ttlMinutes } from './throwBottleLogic.js'
 
+const API_BASE =
+  import.meta.env.VITE_API_BASE || 'http://localhost:8000'
+
 
 const visibilityKm = ref(5)          // required
 const maxReaders = ref(null)
@@ -246,6 +250,8 @@ const maxReaders = ref(null)
 // Hilfs‐Array, damit wir alte Marker löschen
 // ---------------------------------------------
 const allBottleMarkers = []
+const userLat  = ref(null)
+const userLon  = ref(null)
 
 
 import {
@@ -277,10 +283,10 @@ onMounted(() => {
 
   fetchMyBottles()
 })
-onMounted(() => {
+//onMounted(() => {
 
-  fetchAllBottles()
-})
+  //fetchAllBottles()
+//})
 
 
 onMounted(() => {
@@ -293,7 +299,7 @@ import {
   showBottle,
   closeDetailModal as closeAllDetailModal,
   allBottles,
-  fetchAllBottles,
+  //fetchAllBottles,
   allDropdownOpen,
   toggleAllDropdown
 } from './allBottlesLogic.js'
@@ -327,7 +333,7 @@ const {
   messageList,
   loadChatList,
   openConversation,
-  //formatDate,
+  formatDate,
   currentBottleId
 } = useChatLogic(userId)
 
@@ -342,15 +348,37 @@ const getReceiverId = () => {
 
 onMounted(() => loadChatList())
 
+onMounted(async () => {
+  /* Karte wie gehabt initialisieren … */
 
-const formatDate = (str) => {
-  if (!str) return ''
+  /* ------------------------------------
+     1)   Koordinate vom Nutzer holen
+  ------------------------------------ */
+  navigator.geolocation.getCurrentPosition(
+    async pos => {
+      userLat.value = pos.coords.latitude
+      userLon.value = pos.coords.longitude
+      localStorage.setItem('userLat', userLat.value)
+      localStorage.setItem('userLon', userLon.value)
 
-  const date = new Date(str)
-  date.setHours(date.getHours() + 2)  // utc +2
+      // Marker „Your Location“
+      L.marker([userLat.value, userLon.value])
+        .addTo(mapInstance)
+        .bindPopup('📍 Your Location')
+        .openPopup()
 
-  return date.toLocaleString()
-}
+      // ---------------------------------
+      // 2)   Nur Bottles im 5-km-Umkreis:
+      // ---------------------------------
+      await loadNearbyBottles()        
+    },
+    err => console.warn('Geolocation-Error', err),
+    { enableHighAccuracy: true, timeout: 10000 }
+  )
+})
+
+
+
 
 
 
@@ -370,19 +398,19 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 })
 
-async function loadBottles() {
-  const response = await axios.get('http://127.0.0.1:8000/bottles')
-  const bottles = response.data
+//async function loadBottles() {
+  //const response = await axios.get('http://127.0.0.1:8000/bottles')
+  //const bottles = response.data
 
-  markers.forEach(marker => map.removeLayer(marker))
-  markers = []
+  //markers.forEach(marker => map.removeLayer(marker))
+  //markers = []
 
-  bottles.forEach(bottle => {
-    const marker = L.marker([bottle.location.lat, bottle.location.lon]).addTo(map)
-    marker.bindPopup(`<strong>Message:</strong><br/>${bottle.message}`)
-    markers.push(marker)
-  })
-}
+  //bottles.forEach(bottle => {
+    //const marker = L.marker([bottle.location.lat, bottle.location.lon]).addTo(map)
+    //marker.bindPopup(`<strong>Message:</strong><br/>${bottle.message}`)
+    //markers.push(marker)
+  //})
+//}
 
 onMounted(async () => {
 
@@ -439,11 +467,6 @@ onMounted(async () => {
   }
 })
 
-function readBottle() {
-  alert('Read bottles not yet implemented.')
-}
-
-
 
 
 function goToMap() {
@@ -496,18 +519,31 @@ watch(
 window.replyToBottle = (bottleId) => {
   const bottle = allBottles.value.find(b => b.bottle_id === bottleId)
   if (bottle) {
-    viewBottleDetail(bottle)
+    viewBottleDetail(bottle)              // zeigt das Detailfenster
+    toggleReplyBox(bottleId)              // öffnet das Reply-Feld
   } else {
     alert('Bottle not found')
+     viewBottleDetail(bottle)            // öffnet das Modal
+  nextTick(() => toggleReplyBox(bottleId)) // jetzt erst Eingabefeld
   }
 }
 
 window.tryOpen = id => {
   const bottle = allBottles.value.find(b => b.bottle_id === id)
   if (bottle) {
-    openBottle(bottle, viewBottleDetail)   // Callback öffnet Modal
+    openBottle(bottle, toggleReplyBox)   // Callback öffnet Modal
   }
 }
+
+async function loadNearbyBottles() {
+  if (userLat.value == null || userLon.value == null) return
+  const res = await axios.get(
+    `${API_BASE}/nearby_bottles`,
+    { params: { lat: userLat.value, lon: userLon.value, radius: 5000 } }
+  )
+  allBottles.value = res.data.bottles        // aus deinem allBottles-Store
+}
+
 
 </script>
 
