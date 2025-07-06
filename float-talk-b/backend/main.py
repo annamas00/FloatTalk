@@ -17,7 +17,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from bson import ObjectId
 from fastapi.encoders import jsonable_encoder
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 from zoneinfo import ZoneInfo
 
@@ -164,9 +164,6 @@ async def create_anon_user():
     return {"user_id": f"anon_{uuid.uuid4()}"}
 
 # ------------------ Bottles & Logs ------------------
-
-from datetime import datetime, timezone
-from zoneinfo import ZoneInfo 
 
 LOCAL_TZ = ZoneInfo("Europe/Berlin")
 

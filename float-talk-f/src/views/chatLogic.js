@@ -4,6 +4,7 @@ import axios from 'axios'
 
 export const currentBottleSenderId = ref(null)
 
+const formatDate = isoToBerlin
 
 
 export function useChatLogic() {
@@ -60,10 +61,6 @@ showReplyInput.value = true
       console.error('Failed to load conversation:', err)
     }
   }
-
-
-  
-const formatDate = isoToBerlin
 
 
 

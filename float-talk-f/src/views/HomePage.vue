@@ -398,20 +398,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 })
 
-//async function loadBottles() {
-  //const response = await axios.get('http://127.0.0.1:8000/bottles')
-  //const bottles = response.data
-
-  //markers.forEach(marker => map.removeLayer(marker))
-  //markers = []
-
-  //bottles.forEach(bottle => {
-    //const marker = L.marker([bottle.location.lat, bottle.location.lon]).addTo(map)
-    //marker.bindPopup(`<strong>Message:</strong><br/>${bottle.message}`)
-    //markers.push(marker)
-  //})
-//}
-
 onMounted(async () => {
 
   await nextTick()

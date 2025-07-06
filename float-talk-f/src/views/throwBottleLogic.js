@@ -118,9 +118,7 @@ localStorage.setItem('lastBottleLon', storedLon)
     return
   }
 
-  
-  //const now = new Date()
-  //const expireAt = new Date(now.getTime() + ttlMinutes.value * 60000) // z. B. 60 Minuten
+
 
   try {
     const res = await axios.post(`${API_BASE}/add_bottle`, {
