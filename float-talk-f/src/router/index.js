@@ -4,7 +4,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from '../views/HomePage.vue'
 import LoginPage from '../views/LoginPage.vue'
 import ThrowBottle from '../views/ThrowBottle.vue'
-
+import ProfilePage from '../views/ProfilePage.vue'
 // Layouts (new)
 import MainLayout from '../layouts/MainLayout.vue'
 import AuthLayout from '../layouts/AuthLayout.vue'
@@ -18,9 +18,19 @@ const routes = [
     component: LoginPage
   },
   {
+    path: '/login',
+    name: 'LoginPageAlias',
+    component: LoginPage
+  },
+  {
     path: '/home',
     name: 'Home',
     component: HomePage
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: ProfilePage
   }
 ]
 

@@ -79,7 +79,8 @@ class RegisterRequest(BaseModel):
     first_name: str
     last_name: str
     nickname: str
-
+class UserUpdate(BaseModel):
+    nickname: str
 # ------------------ Utils ------------------
 
 def verify_password(plain, hashed):
@@ -142,6 +143,21 @@ async def read_me(current_user_email: str = Depends(get_current_user)):
         "user_id": user["user_id"],
         "nickname": user["nickname"]
     }
+
+@app.put("/me")
+async def update_me(
+    payload: UserUpdate,
+    current_user_email: str = Depends(get_current_user)
+):
+    result = await users.update_one(
+        {"email": current_user_email},
+        {"$set": {"nickname": payload.nickname}}
+    )
+
+    if result.modified_count == 0:
+        raise HTTPException(status_code=400, detail="No changes applied")
+
+    return {"message": "Profile updated"}
 
 @app.get("/auth/anon")
 async def create_anon_user():

@@ -31,7 +31,7 @@
       <!-- user -->
       <div class="flex justify-center pb-4">
         <div class="flex justify-center pb-4">
-          <router-link to="/login" class="profile-btn" title="Profile">
+          <router-link to="/profile" class="profile-btn" title="Profile">
             <UserCircle class="w-7 h-7" />
           </router-link>
         </div>
