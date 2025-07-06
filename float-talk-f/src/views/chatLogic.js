@@ -4,7 +4,6 @@ import axios from 'axios'
 
 export const currentBottleSenderId = ref(null)
 
-const formatDate = isoToBerlin
 
 
 export function useChatLogic() {
@@ -62,6 +61,24 @@ showReplyInput.value = true
     }
   }
 
+
+function isoToBerlin(iso) {
+  if (!iso) return ''
+  return new Intl.DateTimeFormat('de-DE', {
+    day      : '2-digit',
+    month    : '2-digit',
+    year     : 'numeric',
+    hour     : '2-digit',
+    minute   : '2-digit',
+    second   : '2-digit',
+    hourCycle: 'h23',
+    timeZone : 'Europe/Berlin'
+  }).format(new Date(iso))
+}
+
+
+  
+const formatDate = isoToBerlin
 
 
   return {
