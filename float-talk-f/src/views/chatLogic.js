@@ -15,6 +15,8 @@ export function useChatLogic() {
   const currentBottleId = ref(null) 
   const userId = localStorage.getItem('user_id')
 
+ 
+
     const loadChatList = async () => {
   try {
     const res = await axios.get(`http://localhost:8000/conversations/user/${userId}`)
@@ -53,6 +55,8 @@ export function useChatLogic() {
 
       showChatDetailModal.value = true
 
+     
+
     } catch (err) {
       console.error('Failed to load conversation:', err)
     }
@@ -71,6 +75,7 @@ export function useChatLogic() {
     messageList,
     loadChatList,
     openConversation,
+   userId,
     //formatDate,
     currentBottleId
   }
