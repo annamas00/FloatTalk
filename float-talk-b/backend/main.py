@@ -14,9 +14,12 @@ import os
 from typing import List
 import httpx
 from fastapi import APIRouter, HTTPException, Depends
-from math import radians, cos, sin, asin, sqrt
-
-
+from bson import ObjectId
+from fastapi.encoders import jsonable_encoder
+import math
+from datetime import datetime, timezone
+from bson import ObjectId
+from zoneinfo import ZoneInfo
 
 # ------------------ Setup ------------------
 
@@ -162,17 +165,31 @@ async def create_anon_user():
 
 # ------------------ Bottles & Logs ------------------
 
+LOCAL_TZ = ZoneInfo("Europe/Berlin")
+
+
+client = AsyncIOMotorClient(
+    MONGO_URI,
+    tz_aware=True,        
+)
+db = client["floattalk"]
+
+def now_local():
+    return datetime.now(timezone.utc)
+
+
+
 @app.post("/log")
 async def log_event(entry: LogEntry):
     log = entry.dict()
-    log["timestamp"] = datetime.utcnow().isoformat()
+    log["timestamp"] = now_local().isoformat()
     print("📥 Log received:", log)
     await logs.insert_one(log)
     return {"status": "logged"}
 
 @app.get("/bottles")
 async def get_valid_bottles():
-    now = datetime.utcnow().isoformat()
+    now = now_local().isoformat()
     cursor = logs.find({
         "action": "bottle_thrown",
         "details.duration_until": {"$gt": now}
@@ -196,7 +213,7 @@ async def add_bottle(req: Request):
         "sender_id": data["sender_id"],
         "content": data["content"],
         "type": data.get("type", "text"),
-        "bottle_timestamp": datetime.utcnow(),
+        "bottle_timestamp": now_local(),
         #"bottle_expire_at": datetime.utcnow() + timedelta(days=2),
         "status": "floating",
         "tags": data.get("tags", []),
@@ -275,8 +292,8 @@ async def send_reply(data: dict):
             "conversation_id": f"conv_{bottle_id}",
             "bottle_id": bottle_id,
             "participants": [sender_id, receiver_id],
-            "created_at": datetime.utcnow(),
-            "last_updated": datetime.utcnow(),
+            "created_at": now_local(),
+            "last_updated": now_local(),
             "status": "active",
             "reply_enabled": True
         }
@@ -290,28 +307,28 @@ async def send_reply(data: dict):
                     "participants": {"$each": [sender_id, receiver_id]}
                 },
                 "$set": {
-                    "last_updated": datetime.utcnow()
+                    "last_updated": now_local()
                 }
             }
         )
        conv_doc = await conversations.find_one({"_id": conv["_id"]}) 
        
     message = {
-        "message_id": f"msg_{int(datetime.utcnow().timestamp())}",
+        "message_id": f"msg_{int(now_local().timestamp())}",
         "conversation_id": conv_doc["conversation_id"],
         "bottle_id": bottle_id,
         "sender_id": sender_id,
         "receiver_id": receiver_id,
         "content": content,
         "type": "text",
-        "timestamp": datetime.utcnow(),
+        "timestamp": now_local(),
         "status": "sent",
         "reply_to": None
     }
     await messages.insert_one(message)
     await conversations.update_one(
         {"conversation_id": conv_doc["conversation_id"]},
-        {"$set": {"last_updated": datetime.utcnow()}}
+        {"$set": {"last_updated": now_local()}}
     )
     return {"status": "success", "message": "Reply stored"}
 
@@ -484,28 +501,47 @@ app.include_router(geo)
 
 #----nearby bottles----
 
-def _haversine(lat1, lon1, lat2, lon2):
-    # Entfernung in Metern
-    R = 6371000
-    dlat, dlon = map(radians, [lat2-lat1, lon2-lon1])
-    a = sin(dlat/2)**2 + cos(radians(lat1))*cos(radians(lat2))*sin(dlon/2)**2
-    return 2*R*asin(sqrt(a))
+def _haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Entfernung in Metern zwischen zwei WGS84-Koordinaten."""
+    R = 6371000  # Erdradius [m]
+    φ1, φ2 = map(math.radians, [lat1, lat2])
+    dφ      = math.radians(lat2 - lat1)
+    dλ      = math.radians(lon2 - lon1)
+
+    a = (math.sin(dφ / 2) ** 2 +
+         math.cos(φ1) * math.cos(φ2) * math.sin(dλ / 2) ** 2)
+    return 2 * R * math.asin(math.sqrt(a))
+
+def _doc_to_json(doc: dict) -> dict:
+    """Mongo-Dokument → JSON-fähiges Dict (ObjectId → str)."""
+    doc = dict(doc)           # kopieren – Cursor‐Objekt ist SON
+    doc["_id"] = str(doc["_id"])
+    return doc
 
 @app.get("/nearby_bottles")
-async def nearby(lat: float, lon: float, radius: int = 50):
+async def nearby(lat: float, lon: float, radius: int = 5000):
+    out: list[dict] = [] 
     """Alle aktuell gültigen Bottles im Umkreis (radius m)."""
-    now = datetime.utcnow()
+    now = now_local()
     #cursor = bottles.find({"expire_at": {"$gt": now}})
-    out = []
-    async for b in cursor:
-        loc = b.get("location", {})
-        if "lat" in loc and "lon" in loc:
-            dist = _haversine(lat, lon, loc["lat"], loc["lon"])
-            if dist <= radius:
-                out.append(b)
+    cursor = bottles.find({ 
+            "location.lat": {"$exists": True},
+            "location.lon": {"$exists": True},
+            # Beispiel für künftiges TTL-Feld:
+            # "expire_at": {"$gt": now}
+        }
+    )
+
+    async for doc in cursor:
+        loc = doc.get("location", {})
+        if "lat" not in loc or "lon" not in loc:
+            continue
+
+        dist = _haversine(lat, lon, loc["lat"], loc["lon"])
+        if dist <= radius:
+            out.append(_doc_to_json(doc))
+
     return {"bottles": out}
-
-
 # ------------------ Start ------------------
 
 @app.get("/")
