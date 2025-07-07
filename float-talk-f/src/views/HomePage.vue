@@ -85,27 +85,21 @@
           </div>
         </div>
 
-
-
-
-
-
-        <!-- ---------------------------Chat List Modal ------------------------------------------->
+        <!-- Chat List Modal -->
         
-
     <div v-if="showChatModal" class="form-modal">
             <div class="form-box">
               
-              <!-- 顶部标题栏 -->
+            
               <div class="form-header">
                 Bottle List
                 <button @click="showChatModal = false" class="text-xl absolute right-4">✕</button>
               </div>
 
-              <!-- 主体内容区域：左右分布 -->
+             
               <div class="form-content">
                 
-                <!-- 左侧：聊天列表 -->
+                
                 <div class="form-left">
                   <div class="chat-button" v-for="chat in chatList" :key="chat.conversation_id">
                     <button @click="openConversation(chat.conversation_id)" class="w-full text-left">
@@ -162,13 +156,6 @@
             </div>
           </div>
 
-        
-
-
-         <!-- ---------------------------Chat  Modal ------------------------------------------->
-
-
-         
 
         <!-- All Bottles dropdown -->
         <div class="w-full mt-4">
@@ -282,6 +269,8 @@ const maxReaders = ref(null)
 // Hilfs‐Array, damit wir alte Marker löschen
 // ---------------------------------------------
 const allBottleMarkers = []
+const userLat  = ref(null)
+const userLon  = ref(null)
 
 
 import {
@@ -340,7 +329,6 @@ import {
   toggleReplyBox,
   cancelReply,
   sendReply2,
-  
   sendReply
 } from './replyLogic.js'
 
@@ -364,7 +352,8 @@ const {
   messageList,
   loadChatList,
   openConversation,
-  //formatDate,
+  formatDate,
+  userId,
   currentBottleId
 } = useChatLogic()
 
@@ -587,7 +576,7 @@ async function loadNearbyBottles() {
 }
 
 .btn-action {
-  width: 80%;
+  width: 220px;
   background-color: #374151;
   padding: 0.75rem;
   border-radius: 0.5rem;
@@ -617,7 +606,7 @@ async function loadNearbyBottles() {
   background-color: #374151;
 }
 
-.form-modal {
+form-modal {
   position: fixed;
   top: 0;
   left: 0;
@@ -642,12 +631,12 @@ async function loadNearbyBottles() {
   overflow: hidden;
   color: black;
   display: flex;
-  flex-direction: column; /* 垂直布局：header + content */
+  flex-direction: column; 
 }
 
 .form-header {
   height: 5%;
-  background-color: #ddd;  /* 浅灰示意颜色 */
+  background-color: #ddd;  
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1004,23 +993,22 @@ h3 {
   padding: 1.5rem;
   width: 90%;
   max-width: 420px;
-  /* 加这一行很关键 */
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   position: relative;
   margin: auto;
-  /* 加这一行确保它水平居中 */
+
 }
 
 .chat-preview {
-  font-size: 0.875rem;     /* 相当于 Tailwind 的 text-sm */
-  color: #505052;          /* 相当于 Tailwind 的 text-gray-300 */
+  font-size: 0.875rem;     
+  color: #505052;          
   text-align: left;
 }
 .chat-info-wrapper {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.75rem; /* Tailwind 的 text-xs */
+  font-size: 0.75rem; 
   color: rgb(104, 99, 99);
   text-align: left;
 }
@@ -1036,7 +1024,7 @@ h3 {
 
 .chat-button {
   width: 90%;
-  margin: 0 auto 1rem auto; /* 上0，下1rem，左右自动居中 */
+  margin: 0 auto 1rem auto; 
   padding: 1rem;
   background-color: white;
   border-radius: 0.5rem;
@@ -1065,14 +1053,13 @@ h3 {
   word-wrap: break-word;
 }
 
-/* 自己发的气泡样式 */
+
 .self-message .chat-bubble {
   background-color: #2fcc7048;
   color: black;
   border-bottom-right-radius: 0;
 }
 
-/* 别人发的气泡样式 */
 .other-message .chat-bubble {
   background-color: #8d89893a;
   color: black;
