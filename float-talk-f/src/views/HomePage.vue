@@ -86,57 +86,76 @@
         </div>
 
         <!-- Chat List Modal -->
-        <div v-if="showChatModal" class="form-modal">
-          <div class="form-box">
-            <h3 class="text-lg font-bold mb-3">Chat List</h3>
-            <button @click="showChatModal = false" class="absolute top-3 right-3">✕</button>
-            <div v-for="chat in chatList" :key="chat.conversation_id" class="mb-6 border-b pb-2">
-              <button @click="openConversation(chat.conversation_id)">
-                <p class="text-black">💬 {{chat.participants.map(p => p.nickname).join(', ')}}</p>
-                <p v-if="chat.first_message">
-                  ⏰ {{ formatDate(chat.first_message.timestamp) }}
-                </p>
-                <p class="text-sm text-gray-700">
-                  {{ chat.bottle_sender?.nickname || chat.bottle_sender?.user_id || 'Unknown' }}: {{ chat.preview }}
-                </p>
-
-
-              </button>
-            </div>
-          </div>
-
-
-          <!-- Chat Detail Modal -->
-          <div v-if="showChatDetailModal" class="form-box">
-            <div class="bg-white p-6 rounded-2xl shadow-lg w-[90%] max-w-lg max-h-[80vh] overflow-auto">
-              <h2 class="text-xl font-bold mb-4 text-center">Chat history</h2>
-              <button @click="showChatDetailModal = false" class="absolute top-4 right-4 text-black text-sm">✕</button>
-              <div v-for="msg in messageList" :key="msg.timestamp" class="mb-4">
-                <p class="text-xs text-black">{{ formatDate(msg.timestamp) }}</p>
-                <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
-
-              </div>
-            </div>
-          
-
-            <!-- Reply Button -->
-            <div class="dialog-reply mt-4">
-              <div v-if="!showReplyInput" class="flex justify-end">
-                <button class="btn-submit" @click="toggleReplyBox(currentBottleId)">Reply</button>
+        
+    <div v-if="showChatModal" class="form-modal">
+            <div class="form-box">
+              
+            
+              <div class="form-header">
+                Bottle List
+                <button @click="showChatModal = false" class="text-xl absolute right-4">✕</button>
               </div>
 
-              <div v-else>
-                <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
-                <div class="flex justify-end mt-2 space-x-2">
-                  <button class="btn-cancel" @click="cancelReply">Cancel</button>
-
-                  <button class="btn-submit" @click="sendReply2(currentBottleId)">Send</button>
+             
+              <div class="form-content">
+                
+                
+                <div class="form-left">
+                  <div class="chat-button" v-for="chat in chatList" :key="chat.conversation_id">
+                    <button @click="openConversation(chat.conversation_id)" class="w-full text-left">
+                      <div class="chat-info-wrapper">
+                        <p v-if="chat.first_message" class="chat-info-text">
+                          {{ chat.participants.map(p => p.nickname).join(', ') }}<br>
+                          {{ formatDate(chat.first_message.timestamp) }}
+                        </p>
+                      </div>
+                      <p class="chat-preview">
+                        {{ chat.bottle_sender?.nickname || chat.bottle_sender?.user_id || 'Unknown' }}: {{ chat.preview }}
+                      </p>
+                    </button>
+                  </div>
                 </div>
+
+              <!-- .form-right -->
+                  <div class="form-right" v-if="showChatDetailModal">
+                    <div class="form-right-header">
+                      Chat 
+                    </div>
+
+                    <div class="form-right-content">
+
+                      <div
+                          v-for="msg in messageList"
+                          :key="msg.timestamp"
+                          :class="[
+                            'chat-message',
+                            msg.sender_id === userId ? 'self-message' : 'other-message'
+                          ]"
+                        >
+            <div class="chat-bubble">
+              <p class="text-xs text-gray-500 mb-1">{{ formatDate(msg.timestamp) }}</p>
+              <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
+            </div>
+          </div>
+
+
+                    </div>
+
+                    <div class="form-right-reply">
+                      <div class="form-right-reply-blank">
+                        <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
+                      </div>
+                      <div class="form-right-reply-button">
+                        <button class="btn-submit" @click="sendReply2(currentBottleId)">Send</button>
+                      </div>
+                    </div>
+                  </div>
+
+                
               </div>
             </div>
-
           </div>
-        </div>
+
 
         <!-- All Bottles dropdown -->
         <div class="w-full mt-4">
@@ -324,7 +343,7 @@ import {
 
 } from './chatLogic.js'
 
-const userId = 'user_test01'
+
 const {
   showChatModal,
   showChatDetailModal,
@@ -334,8 +353,9 @@ const {
   loadChatList,
   openConversation,
   formatDate,
+  userId,
   currentBottleId
-} = useChatLogic(userId)
+} = useChatLogic()
 
 onMounted(() => {
   loadChatList()
@@ -586,7 +606,7 @@ async function loadNearbyBottles() {
   background-color: #374151;
 }
 
-.form-modal {
+form-modal {
   position: fixed;
   top: 0;
   left: 0;
@@ -601,15 +621,86 @@ async function loadNearbyBottles() {
 
 .form-box {
   background: rgb(253, 253, 253);
-  padding: 0 1.5rem 1.5rem;
+  padding: 0;
   border-radius: 1rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   width: 90%;
-  max-width: 400px;
-  max-height: 550px;
-  overflow-y: auto;
-  color: black
+  height: 70%;
+  max-width: 1000px;
+  max-height: 850px;
+  overflow: hidden;
+  color: black;
+  display: flex;
+  flex-direction: column; 
 }
+
+.form-header {
+  height: 5%;
+  background-color: #ddd;  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  display: flex;
+  flex-direction: row;
+  text-align: left;
+  font-weight: bold;
+}
+
+.form-content {
+  height: 95%;
+  display: flex;
+  flex-direction: row;
+  
+}
+
+.form-left {
+  width: 30%;
+  background-color: #d1cccc75;
+  padding: 1rem;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.form-right {
+  width: 70%;
+  background-color: #d1cccc75;
+  padding: 0;
+  height: 100%;
+  max-height: 650px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-right-header {
+  padding: 0.5rem;
+  border-bottom: 1px solid #ddd;
+  background-color: #f4f4f4;
+  text-align: left;
+  font-weight: bold;
+}
+
+.form-right-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.form-right-reply {
+  display: flex;
+   height: 100px; 
+  border-top: 1px solid #ddd;
+  padding: 1rem;
+}
+
+.form-right-reply-blank {
+  width: 80%;
+}
+
+.form-right-reply-button {
+  width: 20%;
+}
+
 
 .input {
   width: 100%;
@@ -902,10 +993,77 @@ h3 {
   padding: 1.5rem;
   width: 90%;
   max-width: 420px;
-  /* 加这一行很关键 */
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   position: relative;
   margin: auto;
-  /* 加这一行确保它水平居中 */
+
 }
+
+.chat-preview {
+  font-size: 0.875rem;     
+  color: #505052;          
+  text-align: left;
+}
+.chat-info-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem; 
+  color: rgb(104, 99, 99);
+  text-align: left;
+}
+
+.chat-info-text {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: black;
+  text-align: left;
+}
+
+.chat-button {
+  width: 90%;
+  margin: 0 auto 1rem auto; 
+  padding: 1rem;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+.chat-message {
+  display: flex;
+  margin-bottom: 0.75rem;
+}
+
+.self-message {
+  justify-content: flex-end;
+}
+
+.other-message {
+  justify-content: flex-start;
+}
+
+.chat-bubble {
+  max-width: 70%;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background-color: #e5e7eb;
+  color: black;
+  word-wrap: break-word;
+}
+
+
+.self-message .chat-bubble {
+  background-color: #2fcc7048;
+  color: black;
+  border-bottom-right-radius: 0;
+}
+
+.other-message .chat-bubble {
+  background-color: #8d89893a;
+  color: black;
+  border-bottom-left-radius: 0;
+}
+
 </style>

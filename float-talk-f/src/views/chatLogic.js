@@ -90,6 +90,7 @@ const formatDate = isoToBerlin
     loadChatList,
     openConversation,
     formatDate,
+    userId,
     currentBottleId
   }
 }
