@@ -57,7 +57,7 @@ export function useChatLogic() {
    
 
       showChatDetailModal.value = true
-showReplyInput.value = true 
+//showReplyInput.value = true 
     } catch (err) {
       console.error('Failed to load conversation:', err)
     }
