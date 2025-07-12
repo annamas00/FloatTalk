@@ -3,28 +3,37 @@ import { ref } from 'vue'
 import axios from 'axios'
 import { currentBottleSenderId } from './chatLogic'
 import { toRaw } from 'vue'
+import { closeDetailModal as closeAllDetailModal } from './allBottlesLogic'
+import { showReplySuccessModal } from './throwBottleLogic'
+
+
 
 // Reply state
 export const showReplyInput = ref(false)
 export const replyContent = ref('')
-
+//merken, zu welchem Bottle wir replyen
+export const currentBottleId = ref(null)
 export const messageHistory = ref([])
 
 export const userId = localStorage.getItem('user_id')
 
+const replySuccessModal = showReplySuccessModal
 
 // Toggle reply input
-export function toggleReplyBox() {
-  showReplyInput.value = true
+export function toggleReplyBox(bottleId) {
+  showReplyInput.value = true 
+   replyContent.value = ''
+  currentBottleId.value = bottleId
 }
 
 export function cancelReply() {
   replyContent.value = ''
   showReplyInput.value = false
+  currentBottleId.value = null
 }
 
 
-//need change
+
 export async function sendReply(selectedAllBottle) {
   console.log('Sending reply:', replyContent.value)
 console.log('selectedAllBottle:', selectedAllBottle)
@@ -59,43 +68,38 @@ console.log('selectedAllBottle keys:', Object.keys(toRaw(selectedAllBottle)))
       reply_to: null
     })
 
-    console.log('Payload being sent:', {
-  bottle_id: selectedAllBottle.bottle_id,
-  sender_id: userId,
-  receiver_id: selectedAllBottle.sender_id,
-  content: replyContent.value,
-  reply_to: null
-})
-
     console.log('✅ Reply sent:', response.data)
-    alert('Reply sent successfully!')
-    cancelReply()
 
+    cancelReply()
+    closeAllDetailModal()   
+    console.log('✅ Setting showReplySuccessModal to TRUE now!')
+setTimeout(() => {
+  showReplySuccessModal.value = true
+}, 100)
   } catch (err) {
     console.error('❌ Reply failed:', err)
     alert('Failed to send reply.')
   }
 } 
 
-//need change
-export async function sendReply2(currentBottleId) {
 
+export async function sendReply2(currentBottleId) {
+ if (!currentBottleId.value) return alert('Kein Bottle gewählt')
   //const currentBottleId = bottleRef?.value
   console.log('Sending reply:', replyContent.value)
   console.log('Sending reply to bottle:', currentBottleId)
   console.log('Reply content:', replyContent.value)
 
-  if (!currentBottleId || currentBottleId === 'null') {
-  console.error('❌ Missing required currentBottleId fields')
-  return
-  } 
+  //if (!currentBottleId || currentBottleId === 'null') {
+  //console.error('❌ Missing required currentBottleId fields')
+  //return
+  //} 
 
   const receiverId = currentBottleSenderId.value
 
   try {
-// need change
     const response = await axios.post('http://localhost:8000/reply', {
-      bottle_id: currentBottleId,
+      bottle_id: currentBottleId.value,
       sender_id: userId,     
       receiver_id: receiverId,  
       content: replyContent.value,

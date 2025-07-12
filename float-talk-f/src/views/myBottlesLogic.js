@@ -37,6 +37,7 @@ export function viewBottleDetail(bottle) {
   console.log('🧾 Selected bottle:', bottle)
   selectedBottle.value = bottle
   detailVisible.value = true
+   showReplyInput.value = false 
 }
 
 // Close the detail modal

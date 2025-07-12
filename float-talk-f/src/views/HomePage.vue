@@ -13,14 +13,6 @@
           </div>
         </button>
 
-
-        <!--<button @click="readBottle" class="btn-action">
-          <div class="btn-inner">
-            <BookOpen class="w-5 h-5" />
-            <span>Read Past Bottles</span>
-          </div>
-        </button> -->
-
         <button @click="showChatModal = true" class="btn-action">
           <div class="btn-inner">
             <MessageSquareMore class="w-5 h-5" />
@@ -106,7 +98,8 @@
                       <div class="chat-info-wrapper">
                         <p v-if="chat.first_message" class="chat-info-text">
                           {{ chat.participants.map(p => p.nickname).join(', ') }}<br>
-                          {{ formatDate(chat.first_message.timestamp) }}
+                          {{ formatDate(chat.first_message.time
+                          ) }}
                         </p>
                       </div>
                       <p class="chat-preview">
@@ -199,10 +192,24 @@
                     <button class="btn-submit" @click="sendReply(selectedAllBottle)">Send</button>
                   </div>
                 </div>
+                <div v-if="showSuccessModal" class="modal-overlay">
+                 <div class="modal">
+                  <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
+                  <p class="mb-4">Your message has been thrown and saved on the map.</p>
+                  <button @click="goToMap" class="btn-action">Go back to map</button>
+                 </div>
+               </div>
+               <div v-if="showReplySuccessModal" class="modal-overlay">
+                <div class="modal">
+                  <h2 class="text-lg font-semibold mb-4">📦 Reply sent successfully!</h2>
+                  <p class="mb-4">Your reply was saved.</p>
+                  <button @click="goToMapReply" class="btn-action">Go back to map</button>
+                </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
 
         <!-- check my bottle -->
@@ -257,6 +264,7 @@ import markerShadow from '../assets/leaflet/marker-shadow.png'
 import { Send, BookOpen, UserCircle, MessageSquareMore } from 'lucide-vue-next'
 import { watch } from 'vue'
 import { ttlMinutes } from './throwBottleLogic.js'
+import * as turf from '@turf/turf'
 
 const API_BASE =
   import.meta.env.VITE_API_BASE || 'http://localhost:8000'
@@ -284,7 +292,8 @@ import {
   handleTagKeydown,
   prepareThrowForm,
   showSuccessModal,
-  openBottle
+  openBottle,
+  showReplySuccessModal
 } from './throwBottleLogic.js'
 
 import {
@@ -380,6 +389,9 @@ onMounted(async () => {
       userLon.value = pos.coords.longitude
       localStorage.setItem('userLat', userLat.value)
       localStorage.setItem('userLon', userLon.value)
+      
+  const lat = parseFloat(localStorage.getItem('userLat'))
+  const lon = parseFloat(localStorage.getItem('userLon'))
 
       // Marker „Your Location“
       L.marker([userLat.value, userLon.value])
@@ -387,6 +399,55 @@ onMounted(async () => {
         .bindPopup('📍 Your Location')
         .openPopup()
 
+        
+    // 1. Innerer weißer Kreis
+    const whiteCircle = L.circle([lat, lon], {
+      radius: 5000,
+      color: 'black',
+      fillColor: 'transparent',
+      fillOpacity: 1,
+      weight: 2
+    }).addTo(mapInstance)
+
+    // 2. Welt-Polygon mit Loch (graue Fläche außen)
+const world = turf.polygon([
+  [
+    [-180, -90],
+    [180, -90],
+    [180, 90],
+    [-180, 90],
+    [-180, -90]
+  ]
+])
+
+
+      //Kreis um den Nutzerstandort als "Loch" definieren (5 km Radius)
+const hole = turf.circle([lon, lat], 5, {
+  steps: 64,  // Auflösung des Kreises
+  units: 'kilometers'
+})
+
+// Falls das ein MultiPolygon ist → in Polygon umwandelns
+let holePoly = hole
+if (hole.geometry.type === 'MultiPolygon') {
+  const firstPoly = hole.geometry.coordinates[0]
+  holePoly = turf.polygon(firstPoly, hole.properties)
+}
+
+// Maske erstellen: Alles außerhalb des 5-km-Kreises ausgrauen
+const masked = turf.mask(world, holePoly)
+
+ //Graue Maske zur Karte hinzufügen
+        L.geoJSON(masked, {
+          style: {
+            color: '#888',        //randfarbe
+            weight: 0,            //kein rand
+            fillColor: '#ddd',    //hellgrau
+            fillOpacity: 0.5      // 0 = komplett transparent, 1 = undurchsichtig
+          }
+        }).addTo(mapInstance)
+    
+    
       // ---------------------------------
       // 2)   Nur Bottles im 5-km-Umkreis:
       // ---------------------------------
@@ -399,6 +460,7 @@ onMounted(async () => {
 
 
 
+console.log('🧪 showReplySuccessModal at mount:', showReplySuccessModal.value)
 
 
 
@@ -524,15 +586,22 @@ watch(
 
 window.replyToBottle = (bottleId) => {
   const bottle = allBottles.value.find(b => b.bottle_id === bottleId)
-  if (bottle) {
-    viewBottleDetail(bottle)              // zeigt das Detailfenster
-    toggleReplyBox(bottleId)              // öffnet das Reply-Feld
-  } else {
-    alert('Bottle not found')
-     viewBottleDetail(bottle)            // öffnet das Modal
-  nextTick(() => toggleReplyBox(bottleId)) // jetzt erst Eingabefeld
-  }
+  if (!bottle) return alert('Bottle not found')
+
+  selectedAllBottle.value = bottle
+allDetailVisible.value = true
+showReplyInput.value = false
+
 }
+  //if (bottle) {
+    //viewBottleDetail(bottle)              // zeigt das Detailfenster
+    //toggleReplyBox(bottleId)              // öffnet das Reply-Feld
+  //} else {
+    //alert('Bottle not found')
+     //viewBottleDetail(bottle)            // öffnet das Modal
+  //nextTick(() => toggleReplyBox(bottleId)) // jetzt erst Eingabefeld
+  //}
+//}
 
 window.tryOpen = id => {
   const bottle = allBottles.value.find(b => b.bottle_id === id)
@@ -550,6 +619,21 @@ async function loadNearbyBottles() {
   allBottles.value = res.data.bottles        // aus deinem allBottles-Store
 }
 
+
+
+function goToMapReply() {
+  showReplySuccessModal.value = false  // Modal schließen
+  // Aktuelles Bottle-Ort holen
+  const bottle = selectedAllBottle.value
+  const loc = bottle?.location
+  if (loc && mapInstance) {
+    const coords = [loc.lat, loc.lon]
+    mapInstance.setView(coords, 16)
+    L.marker(coords).addTo(mapInstance).bindPopup('📦 Reply sent here').openPopup()
+  }
+
+  allDetailVisible.value = false
+}
 
 </script>
 

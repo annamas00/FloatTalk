@@ -12,6 +12,8 @@ export const city = ref('')
 export const showSuccessModal = ref(false)
 export const ttlMinutes = ref(60)
 export const userId = localStorage.getItem('user_id')
+export const showReplySuccessModal = ref(false)  // 🆕 eigenes Reply-Popup
+
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
