@@ -4,8 +4,8 @@ import axios from 'axios'
 import { currentBottleSenderId } from './chatLogic'
 import { toRaw } from 'vue'
 import { closeDetailModal as closeAllDetailModal } from './allBottlesLogic'
-import { showReplySuccessModal } from './throwBottleLogic'
-
+//import { showReplySuccessModal } from './throwBottleLogic'
+import { nextTick } from 'vue'
 
 
 // Reply state
@@ -16,8 +16,8 @@ export const currentBottleId = ref(null)
 export const messageHistory = ref([])
 
 export const userId = localStorage.getItem('user_id')
+export const showReplySuccessModal = ref(false)  // 🆕 eigenes Reply-Popup
 
-const replySuccessModal = showReplySuccessModal
 
 // Toggle reply input
 export function toggleReplyBox(bottleId) {
@@ -69,13 +69,17 @@ console.log('selectedAllBottle keys:', Object.keys(toRaw(selectedAllBottle)))
     })
 
     console.log('✅ Reply sent:', response.data)
+ 
 
     cancelReply()
+     await nextTick()
+
     closeAllDetailModal()   
-    console.log('✅ Setting showReplySuccessModal to TRUE now!')
-setTimeout(() => {
-  showReplySuccessModal.value = true
-}, 100)
+     await nextTick()
+
+    showReplySuccessModal.value = true
+    console.log('✅ Setting showReplySuccessModal to TRUE now!')  
+    await nextTick() 
   } catch (err) {
     console.error('❌ Reply failed:', err)
     alert('Failed to send reply.')

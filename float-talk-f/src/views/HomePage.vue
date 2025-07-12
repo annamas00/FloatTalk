@@ -199,18 +199,17 @@
                   <button @click="goToMap" class="btn-action">Go back to map</button>
                  </div>
                </div>
-               <div v-if="showReplySuccessModal" class="modal-overlay">
-                <div class="modal">
-                  <h2 class="text-lg font-semibold mb-4">📦 Reply sent successfully!</h2>
-                  <p class="mb-4">Your reply was saved.</p>
-                  <button @click="goToMapReply" class="btn-action">Go back to map</button>
-                </div>
-              </div>
             </div>
           </div>
         </div>
       </div>
-
+      <div v-if="showReplySuccessModal" class="modal-overlay">
+        <div class="modal">
+          <h2 class="text-lg font-semibold mb-4">📦 Reply sent successfully!</h2>
+          <p class="mb-4">Your reply was saved.</p>
+          <button @click="goToMapReply" class="btn-action">Go back to map</button>
+        </div>
+      </div>
 
         <!-- check my bottle -->
         <div v-if="detailVisible" class="dialog-overlay">
@@ -292,8 +291,7 @@ import {
   handleTagKeydown,
   prepareThrowForm,
   showSuccessModal,
-  openBottle,
-  showReplySuccessModal
+  openBottle
 } from './throwBottleLogic.js'
 
 import {
@@ -338,7 +336,8 @@ import {
   toggleReplyBox,
   cancelReply,
   sendReply2,
-  sendReply
+  sendReply, 
+  showReplySuccessModal
 } from './replyLogic.js'
 
 
