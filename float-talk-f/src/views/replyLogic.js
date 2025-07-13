@@ -136,7 +136,7 @@ console.log('🧪 currentBottleId.value in replyLogic:', currentBottleId.value)
       alert('❌ Text error: ' + response.data.message)
       return
     }
-    alert('Reply sent successfully!')
+    //alert('Reply sent successfully!')
 
     messageList.value.push({
   sender_id: userId,
