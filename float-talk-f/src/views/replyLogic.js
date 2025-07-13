@@ -132,6 +132,9 @@ console.log('🧪 currentBottleId.value in replyLogic:', currentBottleId.value)
         if (response.data?.status === 'error') {
       alert('❌ Serverfehler: ' + response.data.message)
       return
+    }else if(response.data?.status === 'texterror') {
+      alert('❌ Text error: ' + response.data.message)
+      return
     }
     alert('Reply sent successfully!')
 

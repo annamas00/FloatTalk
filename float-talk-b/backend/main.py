@@ -20,6 +20,7 @@ import math
 from datetime import datetime, timezone
 from bson import ObjectId
 from zoneinfo import ZoneInfo
+from sensitive_filter import contains_sensitive_word
 
 # ------------------ Setup ------------------
 
@@ -208,13 +209,21 @@ async def get_valid_bottles():
 @app.post("/add_bottle")
 async def add_bottle(req: Request):
     data = await req.json()
+    content = data.get("content", "")
+
+   
+    if contains_sensitive_word(content):
+        return {
+            "status": "texterror",
+            "message": "Your message contains sensitive words. Please revise and try again."
+        }
+
     bottle_doc = {
         "bottle_id": data["bottle_id"],
         "sender_id": data["sender_id"],
-        "content": data["content"],
+        "content": content,
         "type": data.get("type", "text"),
         "bottle_timestamp": now_local(),
-        #"bottle_expire_at": datetime.utcnow() + timedelta(days=2),
         "status": "floating",
         "tags": data.get("tags", []),
         "location": data.get("location", {}),
@@ -282,6 +291,12 @@ async def send_reply(data: dict):
     sender_id = data.get("sender_id")
     receiver_id = data.get("receiver_id")
     content = data.get("content")
+
+    if contains_sensitive_word(content):
+        return {
+            "status": "texterror",
+            "message": "Your message contains sensitive words. Please revise and try again."
+        }
 
     if not all([bottle_id, sender_id, receiver_id, content]):
         return {"status": "error", "message": "Missing required fields"}

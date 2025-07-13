@@ -2,7 +2,6 @@ import { ref } from 'vue'
 import axios from 'axios'
 import { fetchMyBottles } from './myBottlesLogic.js'
 
-
 export const showForm = ref(false)
 export const bottleContent = ref('')
 export const location = ref('')
@@ -114,8 +113,11 @@ localStorage.setItem('lastBottleLat', storedLat)
 localStorage.setItem('lastBottleLon', storedLon)
 
 
+
+
   if (!bottleContent.value || !location.value) {
     console.warn('no locations')
+    
     return
   }
 
@@ -136,9 +138,23 @@ localStorage.setItem('lastBottleLon', storedLon)
       : JSON.parse(storedCoords),
 city: city.value
 
+
+ 
       })
 
+
+
     console.log('✅ Server response:', res.data)
+
+
+if (res.data.status === 'texterror') {
+    alert('❌ Text error: ' + res.data.message);
+    return;
+  }
+
+
+
+
 
     // refresh form
     showForm.value = false
