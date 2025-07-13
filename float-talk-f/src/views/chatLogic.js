@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import axios from 'axios'
 
 export const currentBottleSenderId = ref(null)
+export const currentBottleId = ref(null)
+export const messageList = ref(null)
 
 
 
@@ -12,8 +14,8 @@ export function useChatLogic() {
 
   const chatList = ref([])
   const selectedConversation = ref(null)
-  const messageList = ref([])
-  const currentBottleId = ref(null) 
+  //const messageList = ref([])
+  //const currentBottleId = ref(null) 
   const userId = localStorage.getItem('user_id')
 
  
@@ -53,8 +55,8 @@ export function useChatLogic() {
     currentBottleId.value = res.data.bottle_id || null  // save bottle_id
     currentBottleSenderId.value = res.data.bottle?.sender_id || null 
      
-    console.log('bottle:', currentBottleId.value)
-   
+    console.log('conversation loaded, bottle:', currentBottleId.value)
+
 
       showChatDetailModal.value = true
 //showReplyInput.value = true 

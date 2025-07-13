@@ -139,7 +139,7 @@
                         <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
                       </div>
                       <div class="form-right-reply-button">
-                        <button class="btn-submit" @click="sendReply2(currentBottleId)">Send</button>
+                        <button class="btn-submit" @click="sendReply2">Send</button>
                       </div>
                     </div>
                   </div>

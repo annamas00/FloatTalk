@@ -1,7 +1,7 @@
 // replyLogic.js
 import { ref } from 'vue'
 import axios from 'axios'
-import { currentBottleSenderId } from './chatLogic'
+import { currentBottleSenderId, currentBottleId, messageList } from './chatLogic'
 import { toRaw } from 'vue'
 import { closeDetailModal as closeAllDetailModal } from './allBottlesLogic'
 //import { showReplySuccessModal } from './throwBottleLogic'
@@ -12,9 +12,8 @@ import { nextTick } from 'vue'
 export const showReplyInput = ref(false)
 export const replyContent = ref('')
 //merken, zu welchem Bottle wir replyen
-export const currentBottleId = ref(null)
+//export const currentBottleId = ref(null)
 export const messageHistory = ref([])
-
 export const userId = localStorage.getItem('user_id')
 export const showReplySuccessModal = ref(false)  // 🆕 eigenes Reply-Popup
 
@@ -26,11 +25,15 @@ export function toggleReplyBox(bottleId) {
   currentBottleId.value = bottleId
 }
 
-export function cancelReply() {
+
+export function cancelReply({ keepBottle = false } = {}) {
   replyContent.value = ''
   showReplyInput.value = false
-  currentBottleId.value = null
+  if (!keepBottle) {
+    currentBottleId.value = null
+  }
 }
+
 
 
 
@@ -87,32 +90,59 @@ console.log('selectedAllBottle keys:', Object.keys(toRaw(selectedAllBottle)))
 } 
 
 
-export async function sendReply2(currentBottleId) {
- if (!currentBottleId.value) return alert('Kein Bottle gewählt')
+export async function sendReply2() {
+ //if (!currentBottleId.value) return alert('Kein Bottle gewählt')
   //const currentBottleId = bottleRef?.value
+ console.log('🧪 currentBottleId in replyLogic:', currentBottleId)
+console.log('🧪 currentBottleId.value in replyLogic:', currentBottleId.value)
+
   console.log('Sending reply:', replyContent.value)
   console.log('Sending reply to bottle:', currentBottleId)
   console.log('Reply content:', replyContent.value)
-
+  if (!currentBottleId.value) {
+    console.error('❌ currentBottleId is missing or null')
+    alert('⚠️ Kein Bottle gewählt')
+    return
+  }
+  
   //if (!currentBottleId || currentBottleId === 'null') {
   //console.error('❌ Missing required currentBottleId fields')
   //return
   //} 
 
+
   const receiverId = currentBottleSenderId.value
+  const content = replyContent.value?.trim()
+ if (!content) {
+    alert('⚠️ Nachricht ist leer')
+    return
+  }
 
   try {
     const response = await axios.post('http://localhost:8000/reply', {
       bottle_id: currentBottleId.value,
       sender_id: userId,     
       receiver_id: receiverId,  
-      content: replyContent.value,
+      //content: replyContent.value,
+      content,
       reply_to: null
     })
 
     console.log('✅ Reply sent:', response.data)
+        if (response.data?.status === 'error') {
+      alert('❌ Serverfehler: ' + response.data.message)
+      return
+    }
     alert('Reply sent successfully!')
-    cancelReply()
+
+    messageList.value.push({
+  sender_id: userId,
+  sender_nickname: 'You',
+  content: content,
+  timestamp: new Date().toISOString()
+})
+cancelReply({ keepBottle: true })
+
 
   } catch (err) {
     console.error('❌ Reply failed:', err)
