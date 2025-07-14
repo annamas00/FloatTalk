@@ -17,7 +17,6 @@ import markerIcon from './assets/leaflet/marker-icon.png';
 import markerShadow from './assets/leaflet/marker-shadow.png';
 import { Send, BookOpen, UserCircle } from 'lucide-vue-next';
 
-
 const nickname = ref('Anonymous');
 const nicknameInput = ref('');
 const userId = ref('');
@@ -30,37 +29,6 @@ L.Icon.Default.mergeOptions({
   iconUrl: markerIcon,
   shadowUrl: markerShadow,
 });
-
-watchEffect(async () => {
-  if (route.path === '/login') return;
-
-  await nextTick();
-
-  userId.value = await getOrCreateUserId();
-  nickname.value = localStorage.getItem('nickname') || 'Anonymous';
-
-  const map = L.map('map').setView([48.1351, 11.5820], 12); // Munich
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
-
-  dummyBottles.forEach(bottle => {
-    const marker = L.marker(bottle.coords).addTo(map);
-    marker.bindTooltip(bottle.title, {
-      permanent: false,
-      direction: 'top',
-      className: 'text-sm'
-    });
-    marker.bindPopup(`
-      <strong>${bottle.title}</strong><br/>
-      <p style="margin-top: 0.5em;">${bottle.message}</p>
-      <small>📍 Zip Code: ${bottle.zip}</small>
-    `);
-  });
-});
-
-
-
 
 </script>
 

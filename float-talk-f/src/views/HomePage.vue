@@ -13,6 +13,13 @@
           </div>
         </button>
 
+        <!--<button @click="readBottle" class="btn-action">
+          <div class="btn-inner">
+            <BookOpen class="w-5 h-5" />
+            <span>Read Past Bottles</span>
+          </div>
+        </button> -->
+
         <button @click="showChatModal = true" class="btn-action">
           <div class="btn-inner">
             <MessageSquareMore class="w-5 h-5" />
@@ -27,7 +34,6 @@
             <UserCircle class="w-7 h-7" />
           </router-link>
         </div>
-
 
 
 
@@ -98,8 +104,7 @@
                       <div class="chat-info-wrapper">
                         <p v-if="chat.first_message" class="chat-info-text">
                           {{ chat.participants.map(p => p.nickname).join(', ') }}<br>
-                          {{ formatDate(chat.first_message.time
-                          ) }}
+                          {{ formatDate(chat.first_message.timestamp) }}
                         </p>
                       </div>
                       <p class="chat-preview">
@@ -131,7 +136,6 @@
             </div>
           </div>
 
-
                     </div>
 
                     <div class="form-right-reply">
@@ -139,7 +143,7 @@
                         <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
                       </div>
                       <div class="form-right-reply-button">
-                        <button class="btn-submit" @click="sendReply2">Send</button>
+                        <button class="btn-submit" @click="sendReply2(currentBottleId)">Send</button>
                       </div>
                     </div>
                   </div>
@@ -148,7 +152,6 @@
               </div>
             </div>
           </div>
-
 
         <!-- All Bottles dropdown -->
         <div class="w-full mt-4">
@@ -192,24 +195,10 @@
                     <button class="btn-submit" @click="sendReply(selectedAllBottle)">Send</button>
                   </div>
                 </div>
-                <div v-if="showSuccessModal" class="modal-overlay">
-                 <div class="modal">
-                  <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
-                  <p class="mb-4">Your message has been thrown and saved on the map.</p>
-                  <button @click="goToMap" class="btn-action">Go back to map</button>
-                 </div>
-               </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <div v-if="showReplySuccessModal" class="modal-overlay">
-        <div class="modal">
-          <h2 class="text-lg font-semibold mb-4">📦 Reply sent successfully!</h2>
-          <p class="mb-4">Your reply was saved.</p>
-          <button @click="goToMapReply" class="btn-action">Go back to map</button>
-        </div>
-      </div>
 
         <!-- check my bottle -->
         <div v-if="detailVisible" class="dialog-overlay">
@@ -263,11 +252,10 @@ import markerShadow from '../assets/leaflet/marker-shadow.png'
 import { Send, BookOpen, UserCircle, MessageSquareMore } from 'lucide-vue-next'
 import { watch } from 'vue'
 import { ttlMinutes } from './throwBottleLogic.js'
-import * as turf from '@turf/turf'
+import useMap from './useMap.js'
 
 const API_BASE =
   import.meta.env.VITE_API_BASE || 'http://localhost:8000'
-
 
 const visibilityKm = ref(5)          // required
 const maxReaders = ref(null)
@@ -279,6 +267,19 @@ const allBottleMarkers = []
 const userLat  = ref(null)
 const userLon  = ref(null)
 
+const {
+  initMap,
+  locateUserAndLoadBottles,
+  renderBottleMarkers,
+  mapInstance
+} = useMap()
+
+onMounted(async () => {
+  await initMap('map')
+  await locateUserAndLoadBottles(bottles => {
+    allBottles.value = bottles
+  })
+})
 
 import {
   showForm,
@@ -314,7 +315,6 @@ onMounted(() => {
   //fetchAllBottles()
 //})
 
-
 onMounted(() => {
   loadChatList();
 });
@@ -336,21 +336,17 @@ import {
   toggleReplyBox,
   cancelReply,
   sendReply2,
-  sendReply, 
-  showReplySuccessModal
+  sendReply
 } from './replyLogic.js'
-
 
 
 
 import { computed } from 'vue'
 
-
 import {
   useChatLogic,
 
 } from './chatLogic.js'
-
 
 const {
   showChatModal,
@@ -376,165 +372,12 @@ const getReceiverId = () => {
 
 onMounted(() => loadChatList())
 
-onMounted(async () => {
-  /* Karte wie gehabt initialisieren … */
-
-  /* ------------------------------------
-     1)   Koordinate vom Nutzer holen
-  ------------------------------------ */
-  navigator.geolocation.getCurrentPosition(
-    async pos => {
-      userLat.value = pos.coords.latitude
-      userLon.value = pos.coords.longitude
-      localStorage.setItem('userLat', userLat.value)
-      localStorage.setItem('userLon', userLon.value)
-      
-  const lat = parseFloat(localStorage.getItem('userLat'))
-  const lon = parseFloat(localStorage.getItem('userLon'))
-
-      // Marker „Your Location“
-      L.marker([userLat.value, userLon.value])
-        .addTo(mapInstance)
-        .bindPopup('📍 Your Location')
-        .openPopup()
-
-        
-    // 1. Innerer weißer Kreis
-    const whiteCircle = L.circle([lat, lon], {
-      radius: 5000,
-      color: 'black',
-      fillColor: 'transparent',
-      fillOpacity: 1,
-      weight: 2
-    }).addTo(mapInstance)
-
-    // 2. Welt-Polygon mit Loch (graue Fläche außen)
-const world = turf.polygon([
-  [
-    [-180, -90],
-    [180, -90],
-    [180, 90],
-    [-180, 90],
-    [-180, -90]
-  ]
-])
-
-
-      //Kreis um den Nutzerstandort als "Loch" definieren (5 km Radius)
-const hole = turf.circle([lon, lat], 5, {
-  steps: 64,  // Auflösung des Kreises
-  units: 'kilometers'
-})
-
-// Falls das ein MultiPolygon ist → in Polygon umwandelns
-let holePoly = hole
-if (hole.geometry.type === 'MultiPolygon') {
-  const firstPoly = hole.geometry.coordinates[0]
-  holePoly = turf.polygon(firstPoly, hole.properties)
-}
-
-// Maske erstellen: Alles außerhalb des 5-km-Kreises ausgrauen
-const masked = turf.mask(world, holePoly)
-
- //Graue Maske zur Karte hinzufügen
-        L.geoJSON(masked, {
-          style: {
-            color: '#888',        //randfarbe
-            weight: 0,            //kein rand
-            fillColor: '#ddd',    //hellgrau
-            fillOpacity: 0.5      // 0 = komplett transparent, 1 = undurchsichtig
-          }
-        }).addTo(mapInstance)
-    
-    
-      // ---------------------------------
-      // 2)   Nur Bottles im 5-km-Umkreis:
-      // ---------------------------------
-      await loadNearbyBottles()        
-    },
-    err => console.warn('Geolocation-Error', err),
-    { enableHighAccuracy: true, timeout: 10000 }
-  )
-})
-
-
-
-console.log('🧪 showReplySuccessModal at mount:', showReplySuccessModal.value)
-
-
-
 function formatTimestamp(ts) {
   if (!ts) return ''
   return new Date(ts).toLocaleString()
 }
 
-const map = ref(null)
-let mapInstance = null
 let markers = []
-
-delete L.Icon.Default.prototype._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-})
-
-onMounted(async () => {
-
-  await nextTick()
-  const mapContainer = document.getElementById('map')
-  if (!mapContainer) {
-    console.error('❌ Map container not found!')
-    return
-  }
-
-  if (!mapInstance) {
-    mapInstance = L.map(mapContainer).setView([48.1351, 11.5820], 13)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(mapInstance)
-    map.value = mapInstance
-  } else {
-    console.warn('⚠️ Map is already initialized')
-  }
-
-
-  await loadBottles()
-  // 📍 Standort aus localStorage holen
-  const savedLat = localStorage.getItem('userLat')
-  const savedLon = localStorage.getItem('userLon')
-
-
-  if (savedLat && savedLon) {
-    const lat = parseFloat(savedLat)
-    const lon = parseFloat(savedLon)
-    // Marker und Zoom setzen
-    const marker = L.marker([lat, lon])
-      .addTo(mapInstance)
-      .bindPopup('📍 Your Location')
-      .openPopup()
-
-    mapInstance.setView([lat, lon], 13)
-  }
-
-  const query = new URLSearchParams(window.location.search)
-  const queryLat = query.get('lat')
-  const queryLon = query.get('lon')
-  const msg = query.get('msg')
-  const storedCoords = localStorage.getItem('coords' || '{}')
-
-  if (queryLat && queryLon && msg) {
-    const marker = L.marker([parseFloat(queryLat), parseFloat(queryLon)])
-      .addTo(map.value)
-      .bindPopup(`<strong>📦 New Bottle:</strong><br/>${msg}`)
-      .openPopup()
-
-    mapInstance.setView([parseFloat(queryLat), parseFloat(queryLon)], 14)
-    window.history.replaceState({}, document.title, '/')
-  }
-})
-
-
 
 function goToMap() {
   showSuccessModal.value = false
@@ -542,16 +385,16 @@ function goToMap() {
   const lat = localStorage.getItem('lastBottleLat')
   const lon = localStorage.getItem('lastBottleLon')
 
-  if (lat && lon && mapInstance) {
+  if (lat && lon && mapInstance.value) {
     const coords = [parseFloat(lat), parseFloat(lon)]
-    mapInstance.setView(coords, 16) // ⬅️ Zoom-Level auf Standort
+    mapInstance.value.setView(coords, 16)
 
-    // Marker mit "New Bottle"
-    L.marker(coords).addTo(mapInstance).bindPopup('📦 New Bottle').openPopup()
+    L.marker(coords)
+      .addTo(mapInstance.value)
+      .bindPopup('📦 New Bottle')
+      .openPopup()
   }
 }
-
-
 
 // ---------------------------------------------
 // 2)   Auf Änderungen reagieren
@@ -576,7 +419,6 @@ watch(
   <button onclick="window.replyToBottle('${b.bottle_id}')">💬 Reply</button>
 `)
 
-
       allBottleMarkers.push(marker)
     })
   },
@@ -585,53 +427,21 @@ watch(
 
 window.replyToBottle = (bottleId) => {
   const bottle = allBottles.value.find(b => b.bottle_id === bottleId)
-  if (!bottle) return alert('Bottle not found')
-
-  selectedAllBottle.value = bottle
-allDetailVisible.value = true
-showReplyInput.value = false
-
+  if (bottle) {
+    viewBottleDetail(bottle)              // zeigt das Detailfenster
+    toggleReplyBox(bottleId)              // öffnet das Reply-Feld
+  } else {
+    alert('Bottle not found')
+     viewBottleDetail(bottle)            // öffnet das Modal
+  nextTick(() => toggleReplyBox(bottleId)) // jetzt erst Eingabefeld
+  }
 }
-  //if (bottle) {
-    //viewBottleDetail(bottle)              // zeigt das Detailfenster
-    //toggleReplyBox(bottleId)              // öffnet das Reply-Feld
-  //} else {
-    //alert('Bottle not found')
-     //viewBottleDetail(bottle)            // öffnet das Modal
-  //nextTick(() => toggleReplyBox(bottleId)) // jetzt erst Eingabefeld
-  //}
-//}
 
 window.tryOpen = id => {
   const bottle = allBottles.value.find(b => b.bottle_id === id)
   if (bottle) {
     openBottle(bottle, toggleReplyBox)   // Callback öffnet Modal
   }
-}
-
-async function loadNearbyBottles() {
-  if (userLat.value == null || userLon.value == null) return
-  const res = await axios.get(
-    `${API_BASE}/nearby_bottles`,
-    { params: { lat: userLat.value, lon: userLon.value, radius: 5000 } }
-  )
-  allBottles.value = res.data.bottles        // aus deinem allBottles-Store
-}
-
-
-
-function goToMapReply() {
-  showReplySuccessModal.value = false  // Modal schließen
-  // Aktuelles Bottle-Ort holen
-  const bottle = selectedAllBottle.value
-  const loc = bottle?.location
-  if (loc && mapInstance) {
-    const coords = [loc.lat, loc.lon]
-    mapInstance.setView(coords, 16)
-    L.marker(coords).addTo(mapInstance).bindPopup('📦 Reply sent here').openPopup()
-  }
-
-  allDetailVisible.value = false
 }
 
 </script>
@@ -784,7 +594,6 @@ form-modal {
   width: 20%;
 }
 
-
 .input {
   width: 100%;
   padding: 0.5rem;
@@ -834,7 +643,6 @@ textarea.input {
   min-height: 44px;
 }
 
-
 .tag-chip {
   background-color: #007bff;
   color: white;
@@ -869,7 +677,6 @@ textarea.input {
 h3 {
   color: black;
 }
-
 
 .dropdown-list {
   transition: all 0.2s ease-in-out;
@@ -991,12 +798,10 @@ h3 {
   color: black;
 }
 
-
 .dialog-tags .tag-chip {
   background-color: #e5e7eb;
   color: #111827;
 }
-
 
 .dropdown-item {
   color: #f9fafb;
@@ -1020,7 +825,6 @@ h3 {
 
 /*thrownsuccessmodal*/
 
-
 .modal {
   background-color: white;
   /* ❗ weißer Hintergrund */
@@ -1043,7 +847,6 @@ h3 {
 }
 
 
-
 .chat-popup {
   position: fixed;
   right: 5%;
@@ -1054,7 +857,6 @@ h3 {
   width: 360px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
-
 
 
 .dialog-overlay {
@@ -1136,7 +938,6 @@ h3 {
   word-wrap: break-word;
 }
 
-
 .self-message .chat-bubble {
   background-color: #2fcc7048;
   color: black;
@@ -1150,3 +951,4 @@ h3 {
 }
 
 </style>
+
