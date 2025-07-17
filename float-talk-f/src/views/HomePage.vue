@@ -4,36 +4,91 @@
 
     <div class="sidebar">
       <!-- link sidebar -->
-      <div class="flex-1 flex flex-col items-center justify-center space-y-4">
-        <!-- Trigger Button -->
-        <button @click="prepareThrowForm" class="btn-action mb-4">
-          <div class="btn-inner">
-            <Send class="w-5 h-5" />
-            <span>Throw a Bottle</span>
-          </div>
-        </button>
 
-        <button @click="showChatModal = true" class="btn-action">
-          <div class="btn-inner">
-            <MessageSquareMore class="w-5 h-5" />
-            <span>Chat</span>
-          </div>
-        </button>
+
+     
+
+     <div class="function-button">
+  <div class="flex-icon-group">
+    <router-link to="/profile" class="profile-btn" title="Profile">
+      <UserCircle class="w-7 h-7" />
+    </router-link>
+
+    <button @click="prepareThrowForm" class="btn-action">
+      <div class="btn-inner">
+        <Send class="w-5 h-5" />
+      </div>
+    </button>
+
+    <button @click="showChatModal = true" class="btn-action">
+      <div class="btn-inner">
+        <MessageSquareMore class="w-5 h-5" />
+      </div>
+    </button>
+
+   <button @click="showMyBottleModal = true" class="btn-action">
+  <div class="btn-inner">
+    <Mails class="w-5 h-5" />
+  </div>
+</button>
+
+  
+</div>
+
+      
+      
+
       </div>
       <!-- user -->
       <div class="flex justify-center pb-4">
-        <div class="flex justify-center pb-4">
+        <!-- <div class="flex justify-center pb-4">
           <router-link to="/profile" class="profile-btn" title="Profile">
             <UserCircle class="w-7 h-7" />
           </router-link>
+        </div> -->
+
+
+<!-- My Bottles Modal -->
+<div v-if="showMyBottleModal" class="form-modal">
+  <div class="form-box">
+    <div class="form-header">
+      <Mails class="w-5 h-5" />
+      <h2 class="dialog-title"> Bottle Detail</h2>
+      <button @click="showMyBottleModal = false" class="text-xl absolute right-4">✕</button>
+    </div>
+
+    <div class="mybottle-content">
+   
+        <div class="chat-button" v-for="bottle in myBottles" :key="bottle.bottle_id">
+         
+            <div class="chat-info-wrapper">
+              <p class="dialog-tags">
+                <CalendarFold class="w-4 h-4" />
+                {{  formatDate(bottle.timestamp)}} 
+              </p>
+
+               <div class="dialog-tags" >
+               <div v-if="bottle.tags?.length" class="flex items-center gap-1 text-sm text-gray-600">
+                  <Tag class="w-4 h-4" />
+                  {{ bottle.tags.join(', ') }}
+              </div>
+
+              </div>
+            </div>
+             <p class="dialog-content">
+            <p class="bottle-details">{{ bottle.content.slice(0, 30) }}</p>
+         </p>
         </div>
-
-
+      
+    </div>
+  </div>
+</div>
 
 
         <!-- new windows -->
         <div v-if="showForm" class="form-modal">
           <div class="form-box">
+           
             <h3 class="text-lg font-bold mb-3">New Bottle</h3>
 
             <textarea v-model="bottleContent" placeholder="Write your message..." class="input mb-2"></textarea>
@@ -84,7 +139,8 @@
               
             
               <div class="form-header">
-                Bottle List
+<MessageSquareMore class="w-5 h-5" />
+                Chat
                 <button @click="showChatModal = false" class="text-xl absolute right-4">✕</button>
               </div>
 
@@ -93,26 +149,32 @@
                 
                 
                 <div class="form-left">
-                  <div class="chat-button" v-for="chat in chatList" :key="chat.conversation_id">
-                    <button @click="openConversation(chat.conversation_id)" class="w-full text-left">
+
+                  <button @click="openConversation(chat.conversation_id)" class="chat-button" v-for="chat in chatList" :key="chat.conversation_id">
+                    
+                    
+                
                       <div class="chat-info-wrapper">
                         <p v-if="chat.first_message" class="chat-info-text">
                           {{ chat.participants.map(p => p.nickname).join(', ') }}<br>
-                          {{ formatDate(chat.first_message.time
+                          {{ formatDate(chat.first_message.timestamp
                           ) }}
                         </p>
                       </div>
                       <p class="chat-preview">
                         {{ chat.bottle_sender?.nickname || chat.bottle_sender?.user_id || 'Unknown' }}: {{ chat.preview }}
                       </p>
-                    </button>
-                  </div>
+                    
+                  </button>
                 </div>
 
               <!-- .form-right -->
                   <div class="form-right" v-if="showChatDetailModal">
+                   
                     <div class="form-right-header">
-                      Chat 
+                     
+                     <Handshake class="w-5 h-5" />
+                      
                     </div>
 
                     <div class="form-right-content">
@@ -151,7 +213,7 @@
 
 
         <!-- All Bottles dropdown -->
-        <div class="w-full mt-4">
+       <!--  <div class="w-full mt-4">
           <button @click="toggleAllDropdown" class="btn-action w-full flex justify-between items-center">
             <span>All Bottles</span>
             <span>{{ allDropdownOpen ? '▲' : '▼' }}</span>
@@ -162,7 +224,7 @@
               {{ bottle && bottle.content ? bottle.content.slice(0, 20) : '[No Content]' }}
             </div>
           </div>
-        </div>
+        </div> -->
 
         <!-- All Bottle Detail Modal -->
         <div v-if="allDetailVisible" class="dialog-overlay">
@@ -196,7 +258,7 @@
                  <div class="modal">
                   <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
                   <p class="mb-4">Your message has been thrown and saved on the map.</p>
-                  <button @click="goToMap" class="btn-action">Go back to map</button>
+                  <button @click="goToMap" class="btn-action">Back</button>
                  </div>
                </div>
             </div>
@@ -234,7 +296,7 @@
 
         <!-- Dropdown toggle button -->
 
-        <div class="w-full mt-4">
+      <!--   <div class="w-full mt-4">
           <button @click="toggleDropdown" class="btn-action w-full flex justify-between items-center">
             <span>my Bottles</span>
             <span>{{ dropdownOpen ? '▲' : '▼' }}</span>
@@ -246,8 +308,15 @@
               {{ bottle.content.slice(0, 20) }}...
             </div>
           </div>
-        </div>
+        </div> -->
+
+       
       </div>
+              <div class="icon">
+                 <Waves class="w-5 h-5" />
+                  Float
+                  Talk
+              </div>
     </div>
   </div>
 </template>
@@ -260,7 +329,7 @@ import axios from 'axios'
 import markerIcon2x from '../assets/leaflet/marker-icon-2x.png'
 import markerIcon from '../assets/leaflet/marker-icon.png'
 import markerShadow from '../assets/leaflet/marker-shadow.png'
-import { Send, BookOpen, UserCircle, MessageSquareMore } from 'lucide-vue-next'
+import { Send, BookOpen, UserCircle, MessageSquareMore,Mails,Bird,Tag,CalendarFold,Handshake, Waves} from 'lucide-vue-next'
 import { watch } from 'vue'
 import { ttlMinutes } from './throwBottleLogic.js'
 import * as turf from '@turf/turf'
@@ -273,6 +342,7 @@ const isAutoDetected = ref(false)
 
 const visibilityKm = ref(5)          // required
 const maxReaders = ref(null)
+const showMyBottleModal = ref(false)
 
 // ---------------------------------------------
 // Hilfs‐Array, damit wir alte Marker löschen
@@ -643,7 +713,7 @@ function goToMapReply() {
 <style scoped>
 .grid-container {
   display: grid;
-  grid-template-columns: 1fr 300px;
+  grid-template-columns: 1fr 100px;
   height: 100vh;
   width: 100vw;
 }
@@ -654,43 +724,60 @@ function goToMapReply() {
 }
 
 .sidebar {
-  background-color: #1f2937;
-  color: white;
+  background-color: #b8bcc2;
+  color: rgb(245, 239, 239);
   padding: 2rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
+.function-button {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column; 
+}
 
 .btn-action {
-  width: 220px;
-  background-color: #374151;
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
+  width: 50px;
+  height: 50px;
+  border-radius: 9999px; 
+  background-color: #c4c2d8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
 .btn-action:hover {
-  background-color: #4b5563;
+  background-color: #97999b;
 }
 
 .btn-inner {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+}
+
+.flex-icon-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; 
+  align-items: center;
 }
 
 .profile-btn {
-  background-color: #111827;
+  background-color: #c4c2d8;
   padding: 0.5rem;
   border-radius: 9999px;
   transition: background-color 0.2s ease;
 }
 
 .profile-btn:hover {
-  background-color: #374151;
+  background-color: #97999b;
 }
 
 form-modal {
@@ -739,6 +826,13 @@ form-modal {
   display: flex;
   flex-direction: row;
   
+}
+
+.mybottle-content {
+  height: 95%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
 }
 
 .form-left {
@@ -1037,14 +1131,7 @@ h3 {
   text-align: center;
 }
 
-.btn-action {
-  background-color: #4f46e5;
-  color: white;
-  padding: 0.5rem 1.2rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
+
 
 
 
@@ -1075,7 +1162,7 @@ h3 {
 }
 
 .dialog-box {
-  background-color: white;
+  background-color: rgb(228, 226, 226);
   border-radius: 1rem;
   padding: 1.5rem;
   width: 90%;
@@ -1088,7 +1175,7 @@ h3 {
 
 .chat-preview {
   font-size: 0.875rem;     
-  color: #505052;          
+  color: #000000;          
   text-align: left;
 }
 .chat-info-wrapper {
@@ -1096,7 +1183,7 @@ h3 {
   align-items: center;
   justify-content: space-between;
   font-size: 0.75rem; 
-  color: rgb(104, 99, 99);
+  color: rgb(255, 255, 255);
   text-align: left;
 }
 
@@ -1105,7 +1192,7 @@ h3 {
   align-items: center;
   justify-content: space-between;
   font-size: 0.75rem;
-  color: black;
+  color: rgb(0, 0, 0);
   text-align: left;
 }
 
@@ -1117,11 +1204,18 @@ h3 {
   border-radius: 0.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   cursor: pointer;
+  text-align: left;  
+}
+.chat-info{
+ 
+  background-color: white;
+ 
 }
 .chat-message {
   display: flex;
   margin-bottom: 0.75rem;
 }
+
 
 .self-message {
   justify-content: flex-end;
@@ -1152,5 +1246,10 @@ h3 {
   color: black;
   border-bottom-left-radius: 0;
 }
-
+.bottle-details{
+  text-align: center;
+}
+.icon{
+  text-align: center;
+}
 </style>
