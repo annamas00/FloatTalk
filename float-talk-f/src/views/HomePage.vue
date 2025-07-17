@@ -45,7 +45,7 @@
               </div>
               <input v-model="tagInput" @keydown="handleTagKeydown" placeholder="Add tags" class="input-tag" />
             </div>
-            <input v-model="location" placeholder="Enter location" class="input mb-4" />
+            <input v-model="location" placeholder="Enter location" class="input mb-4" :readonly="isAutoDetected" />
 
             <!-- Sichtbarkeitsdauer der Bottle -->
             <label class="block mb-1 text-sm font-medium">Visible for:</label>
@@ -268,6 +268,8 @@ import * as turf from '@turf/turf'
 const API_BASE =
   import.meta.env.VITE_API_BASE || 'http://localhost:8000'
 
+  
+const isAutoDetected = ref(false)
 
 const visibilityKm = ref(5)          // required
 const maxReaders = ref(null)
@@ -389,6 +391,8 @@ onMounted(async () => {
       localStorage.setItem('userLat', userLat.value)
       localStorage.setItem('userLon', userLon.value)
       
+      
+isAutoDetected.value = true
   const lat = parseFloat(localStorage.getItem('userLat'))
   const lon = parseFloat(localStorage.getItem('userLon'))
 
