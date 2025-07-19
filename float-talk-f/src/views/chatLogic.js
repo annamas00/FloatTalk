@@ -1,14 +1,18 @@
 // chatLogic.js
-import { ref } from 'vue'
+import { ref, nextTick, watch } from 'vue'
 import axios from 'axios'
+import { scrollToBottom } from './replyLogic' 
 
 export const currentBottleSenderId = ref(null)
 export const currentBottleId = ref(null)
-export const messageList = ref(null)
+//export const messageList = ref(null)
+export const messageList = ref([])
 
 
 
-export function useChatLogic() {
+
+
+export function useChatLogic(chatMessagesRef) {
   const showChatModal = ref(false)
   const showChatDetailModal = ref(false)
 
@@ -60,13 +64,39 @@ export function useChatLogic() {
 
       showChatDetailModal.value = true
 //showReplyInput.value = true 
-    } catch (err) {
-      console.error('Failed to load conversation:', err)
-    }
+}catch (err) {
+    console.error('Failed to load conversation:', err)
   }
+}
+    
+     watch(showChatDetailModal, async (visible) => {
+    if (visible) {
+      await nextTick()
+      await new Promise(r => setTimeout(r, 150)) // sicherstellen, dass DOM da ist
 
+      if (chatMessagesRef.value instanceof HTMLElement) {
+        console.log('🧪 autoscroll nach Öffnen:', chatMessagesRef.value)
+        await scrollToBottom(chatMessagesRef)
+      } else {
+        console.warn('⚠️ chatMessages ist kein HTMLElement:', chatMessagesRef.value)
+      }
+    }
+  })
 
-function isoToBerlin(iso) {
+    watch(messageList, async () => {
+    await nextTick()
+    setTimeout(async () => {
+      if (chatMessagesRef.value && chatMessagesRef.value.scrollHeight > 0) {
+        chatMessagesRef.value.scrollTop = chatMessagesRef.value.scrollHeight
+        console.log('✅ Auto-Scroll nach neuer Nachricht')
+      } else {
+        console.warn('❌ Auto-Scroll nach Nachricht fehlgeschlagen')
+      }
+    }, 100)
+  })
+
+//function isoToBerlin(iso) {
+   const formatDate = (iso) => {
   if (!iso) return ''
   return new Intl.DateTimeFormat('de-DE', {
     day      : '2-digit',
@@ -80,10 +110,7 @@ function isoToBerlin(iso) {
   }).format(new Date(iso))
 }
 
-
-  
-const formatDate = isoToBerlin
-
+//const formatDate = isoToBerlin
 
   return {
     showChatModal,

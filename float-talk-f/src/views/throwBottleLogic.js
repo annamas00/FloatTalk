@@ -11,6 +11,8 @@ export const city = ref('')
 export const showSuccessModal = ref(false)
 export const ttlMinutes = ref(60)
 export const userId = localStorage.getItem('user_id')
+export const maxReaders = ref(null)
+
 
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
@@ -133,10 +135,11 @@ localStorage.setItem('lastBottleLon', storedLon)
       ? {
           lat: parseFloat(storedLat),
           lon: parseFloat(storedLon),
-          address : location.value, // <-- neuer Feldname city : city.value
+          address : location.value,
       }
       : JSON.parse(storedCoords),
-city: city.value
+city: city.value,
+  max_readers: maxReaders.value ? parseInt(maxReaders.value) : null,
 
 
  
@@ -159,16 +162,15 @@ if (res.data.status === 'texterror') {
     // refresh form
     showForm.value = false
     bottleContent.value = ''
-     showSuccessModal.value = true // ➤ Erfolgspopup anzeigen
+    showSuccessModal.value = true 
     location.value = ''
     tagList.value = []
     tagInput.value = ''
+    maxReaders.value = null  
         if (refreshNearby) {
       await refreshNearby()
     }
-
-       await fetchMyBottles() // ⬅️ Ergänzen
-
+       await fetchMyBottles() 
 
     return res.data
   } catch (err) {

@@ -78,208 +78,215 @@
         </div>
 
         <!-- Chat List Modal -->
-        
-    <div v-if="showChatModal" class="form-modal">
-            <div class="form-box">
-              
-            
-              <div class="form-header">
-                Bottle List
-                <button @click="showChatModal = false" class="text-xl absolute right-4">✕</button>
-              </div>
 
-             
-              <div class="form-content">
-                
-                
-                <div class="form-left">
-                  <div class="chat-button" v-for="chat in chatList" :key="chat.conversation_id">
-                    <button @click="openConversation(chat.conversation_id)" class="w-full text-left">
-                      <div class="chat-info-wrapper">
-                        <p v-if="chat.first_message" class="chat-info-text">
-                          {{ chat.participants.map(p => p.nickname).join(', ') }}<br>
-                          {{ formatDate(chat.first_message.time
-                          ) }}
-                        </p>
-                      </div>
-                      <p class="chat-preview">
-                        {{ chat.bottle_sender?.nickname || chat.bottle_sender?.user_id || 'Unknown' }}: {{ chat.preview }}
+        <div v-if="showChatModal" class="form-modal">
+          <div class="form-box">
+
+
+            <div class="form-header">
+              Bottle List
+              <button @click="showChatModal = false" class="text-xl absolute right-4">✕</button>
+            </div>
+
+
+            <div class="form-content">
+
+
+              <div class="form-left">
+                <div class="chat-button" v-for="chat in chatList" :key="chat.conversation_id">
+                  <button @click="openConversation(chat.conversation_id)" class="w-full text-left">
+                    <div class="chat-info-wrapper">
+                      <p v-if="chat.first_message" class="chat-info-text">
+                        {{chat.participants.map(p => p.nickname).join(', ')}}<br>
+                        {{ formatDate(chat.first_message.time
+                        ) }}
                       </p>
-                    </button>
-                  </div>
+                    </div>
+                    <p class="chat-preview">
+                      {{ chat.bottle_sender?.nickname || chat.bottle_sender?.user_id || 'Unknown' }}: {{ chat.preview }}
+                    </p>
+                  </button>
                 </div>
+              </div>
 
               <!-- .form-right -->
-                  <div class="form-right" v-if="showChatDetailModal">
-                    <div class="form-right-header">
-                      Chat 
-                    </div>
+              <div class="form-right" v-if="showChatDetailModal">
+                <div class="form-right-header">
+                  Chat
+                </div>
 
-                    <div class="form-right-content">
-
-                      <div
-                          v-for="msg in messageList"
-                          :key="msg.timestamp"
-                          :class="[
-                            'chat-message',
-                            msg.sender_id === userId ? 'self-message' : 'other-message'
-                          ]"
-                        >
-            <div class="chat-bubble">
-              <p class="text-xs text-gray-500 mb-1">{{ formatDate(msg.timestamp) }}</p>
-              <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
-            </div>
-          </div>
-
-
-                    </div>
-
-                    <div class="form-right-reply">
-                      <div class="form-right-reply-blank">
-                        <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
-                      </div>
-                      <div class="form-right-reply-button">
-                        <button class="btn-submit" @click="sendReply2">Send</button>
+                <div class="form-right-content">
+                  <div id="chat-messages" ref="chatMessagesRef"
+                    class="chat-messages"
+  style="max-height: 400px; min-height: 200px; overflow-y: auto;">
+                    <div v-for="msg in messageList" :key="msg.timestamp" :class="[
+                      'chat-message',
+                      msg.sender_id === userId ? 'self-message' : 'other-message'
+                    ]">
+                      <div class="chat-bubble">
+                        <p class="text-xs text-gray-500 mb-1">{{ formatDate(msg.timestamp) }}</p>
+                        <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
                       </div>
                     </div>
                   </div>
+</div>
 
-                
-              </div>
-            </div>
-          </div>
-
-
-        <!-- All Bottles dropdown -->
-        <div class="w-full mt-4">
-          <button @click="toggleAllDropdown" class="btn-action w-full flex justify-between items-center">
-            <span>All Bottles</span>
-            <span>{{ allDropdownOpen ? '▲' : '▼' }}</span>
-          </button>
-
-          <div v-if="allDropdownOpen" class="dropdown-list">
-            <div v-for="(bottle, index) in allBottles" :key="index" class="dropdown-item" @click="showBottle(bottle)">
-              {{ bottle && bottle.content ? bottle.content.slice(0, 20) : '[No Content]' }}
-            </div>
-          </div>
-        </div>
-
-        <!-- All Bottle Detail Modal -->
-        <div v-if="allDetailVisible" class="dialog-overlay">
-          <div class="dialog-box text-black">
-            <div class="dialog-header">
-              <h2 class="dialog-title">📦 Bottle Detail</h2>
-              <button class="dialog-close" @click="closeAllDetailModal">×</button>
-            </div>
-
-            <div class="dialog-body">
-              <p class="dialog-content">{{ selectedAllBottle?.content }}</p>
-              <div class="dialog-tags" v-if="selectedAllBottle?.tags">
-                <span v-for="(tag, idx) in selectedAllBottle.tags" :key="idx" class="tag-chip">
-                  {{ tag }}
-                </span>
-              </div>
-
-              <!-- Reply Button -->
-              <div class="dialog-reply mt-4">
-                <div v-if="!showReplyInput" class="flex justify-end">
-                  <button class="btn-submit" @click="toggleReplyBox(selectedAllBottle?.bottle_id)">Reply</button>
-                </div>
-                <div v-else>
-                  <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
-                  <div class="flex justify-end mt-2 space-x-2">
-                    <button class="btn-cancel" @click="cancelReply">Cancel</button>
-                    <button class="btn-submit" @click="sendReply(selectedAllBottle)">Send</button>
+                  <div class="form-right-reply">
+                    <div class="form-right-reply-blank">
+                      <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
+                    </div>
+                    <div class="form-right-reply-button">
+                      <button class="btn-submit" @click="handleSendReply">Send</button>
+                    </div>
                   </div>
                 </div>
-                <div v-if="showSuccessModal" class="modal-overlay">
-                 <div class="modal">
-                  <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
-                  <p class="mb-4">Your message has been thrown and saved on the map.</p>
-                  <button @click="goToMap" class="btn-action">Go back to map</button>
-                 </div>
-               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div v-if="showReplySuccessModal" class="modal-overlay">
-        <div class="modal">
-          <h2 class="text-lg font-semibold mb-4">📦 Reply sent successfully!</h2>
-          <p class="mb-4">Your reply was saved.</p>
-          <button @click="goToMapReply" class="btn-action">Go back to map</button>
-        </div>
-      </div>
 
-        <!-- check my bottle -->
-        <div v-if="detailVisible" class="dialog-overlay">
-          <div class="dialog-box">
-            <div class="dialog-header">
-              <h2 class="dialog-title">📩 Bottle Detail</h2>
-              <button class="dialog-close" @click="closeDetailModal">×</button>
-            </div>
-            <div class="dialog-body">
-              <p class="dialog-content">
-                {{ selectedBottle && selectedBottle.content }}
-              </p>
 
-              <div class="dialog-tags" v-if="selectedBottle && selectedBottle.tags">
-                <span v-for="(tag, idx) in selectedBottle.tags" :key="idx" class="tag-chip">
-                  {{ tag }}
-                </span>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Dropdown toggle button -->
 
-        <div class="w-full mt-4">
-          <button @click="toggleDropdown" class="btn-action w-full flex justify-between items-center">
-            <span>my Bottles</span>
-            <span>{{ dropdownOpen ? '▲' : '▼' }}</span>
-          </button>
+          <!-- All Bottles dropdown -->
+          <div class="w-full mt-4">
+            <button @click="toggleAllDropdown" class="btn-action w-full flex justify-between items-center">
+              <span>All Bottles</span>
+              <span>{{ allDropdownOpen ? '▲' : '▼' }}</span>
+            </button>
 
-          <div v-if="dropdownOpen" class="dropdown-list">
-            <div v-for="(bottle, index) in myBottles" :key="index" class="dropdown-item"
-              @click="viewBottleDetail(bottle)">
-              {{ bottle.content.slice(0, 20) }}...
+            <div v-if="allDropdownOpen" class="dropdown-list">
+              <div v-for="(bottle, index) in allBottles" :key="index" class="dropdown-item" @click="showBottle(bottle)">
+                {{ bottle && bottle.content ? bottle.content.slice(0, 20) : '[No Content]' }}
+              </div>
+            </div>
+          </div>
+
+          <!-- All Bottle Detail Modal -->
+          <div v-if="allDetailVisible" class="dialog-overlay">
+            <div class="dialog-box text-black">
+              <div class="dialog-header">
+                <h2 class="dialog-title">📦 Bottle Detail</h2>
+                <button class="dialog-close" @click="closeAllDetailModal">×</button>
+              </div>
+
+              <div class="dialog-body">
+                <p class="dialog-content">{{ selectedAllBottle?.content }}</p>
+                <div class="dialog-tags" v-if="selectedAllBottle?.tags">
+                  <span v-for="(tag, idx) in selectedAllBottle.tags" :key="idx" class="tag-chip">
+                    {{ tag }}
+                  </span>
+                </div>
+
+                <!-- Reply Button -->
+                <div class="dialog-reply mt-4">
+                  <div v-if="!showReplyInput" class="flex justify-end">
+                    <button class="btn-submit" @click="toggleReplyBox(selectedAllBottle?.bottle_id)">Reply</button>
+                  </div>
+                  <div v-else>
+                    <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
+                    <div class="flex justify-end mt-2 space-x-2">
+                      <button class="btn-cancel" @click="cancelReply">Cancel</button>
+                      <button class="btn-submit" @click="sendReply(selectedAllBottle)">Send</button>
+                    </div>
+                  </div>
+                  <div v-if="showSuccessModal" class="modal-overlay">
+                    <div class="modal">
+                      <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
+                      <p class="mb-4">Your message has been thrown and saved on the map.</p>
+                      <button @click="goToMap" class="btn-action">Go back to map</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div v-if="showReplySuccessModal" class="modal-overlay">
+            <div class="modal">
+              <h2 class="text-lg font-semibold mb-4">📦 Reply sent successfully!</h2>
+              <p class="mb-4">Your reply was saved.</p>
+              <button @click="goToMapReply" class="btn-action">Go back to map</button>
+            </div>
+          </div>
+
+          <!-- check my bottle -->
+          <div v-if="detailVisible" class="dialog-overlay">
+            <div class="dialog-box">
+              <div class="dialog-header">
+                <h2 class="dialog-title">📩 Bottle Detail</h2>
+                <button class="dialog-close" @click="closeDetailModal">×</button>
+              </div>
+              <div class="dialog-body">
+                <p class="dialog-content">
+                  {{ selectedBottle && selectedBottle.content }}
+                </p>
+
+                <div class="dialog-tags" v-if="selectedBottle && selectedBottle.tags">
+                  <span v-for="(tag, idx) in selectedBottle.tags" :key="idx" class="tag-chip">
+                    {{ tag }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dropdown toggle button -->
+
+          <div class="w-full mt-4">
+            <button @click="toggleDropdown" class="btn-action w-full flex justify-between items-center">
+              <span>my Bottles</span>
+              <span>{{ dropdownOpen ? '▲' : '▼' }}</span>
+            </button>
+
+            <div v-if="dropdownOpen" class="dropdown-list">
+              <div v-for="(bottle, index) in myBottles" :key="index" class="dropdown-item"
+                @click="viewBottleDetail(bottle)">
+                {{ bottle.content.slice(0, 20) }}...
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 </template>
 
 <script setup>
-import { onMounted, nextTick, ref } from 'vue'
-import L from 'leaflet'
+import { onMounted, nextTick, ref, watch } from 'vue'
+import L, { icon } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import axios from 'axios'
 import markerIcon2x from '../assets/leaflet/marker-icon-2x.png'
 import markerIcon from '../assets/leaflet/marker-icon.png'
 import markerShadow from '../assets/leaflet/marker-shadow.png'
 import { Send, BookOpen, UserCircle, MessageSquareMore } from 'lucide-vue-next'
-import { watch } from 'vue'
 import { ttlMinutes } from './throwBottleLogic.js'
 import * as turf from '@turf/turf'
+import bottleIconUrl from '../assets/leaflet/bottle.png'
+
+
+const bottleIcon = L.icon({
+  iconUrl: bottleIconUrl,
+  iconSize: [32, 32],         // 32x32 Pixel
+  iconAnchor: [16, 32],       // Mittelpunkt unten
+  popupAnchor: [0, -32]       // Popup-Position
+})
+
 
 const API_BASE =
   import.meta.env.VITE_API_BASE || 'http://localhost:8000'
 
-  
-const isAutoDetected = ref(false)
 
-const visibilityKm = ref(5)          // required
+const isAutoDetected = ref(false)
+const visibilityKm = ref(5)
 const maxReaders = ref(null)
+const chatMessagesRef = ref(null)
+
 
 // ---------------------------------------------
 // Hilfs‐Array, damit wir alte Marker löschen
 // ---------------------------------------------
 const allBottleMarkers = []
-const userLat  = ref(null)
-const userLon  = ref(null)
+const userLat = ref(null)
+const userLon = ref(null)
 
 
 import {
@@ -313,7 +320,7 @@ onMounted(() => {
 })
 //onMounted(() => {
 
-  //fetchAllBottles()
+//fetchAllBottles()
 //})
 
 
@@ -338,20 +345,20 @@ import {
   toggleReplyBox,
   cancelReply,
   sendReply2,
-  sendReply, 
+  sendReply,
   showReplySuccessModal
 } from './replyLogic.js'
 
-
-
-
-import { computed } from 'vue'
-
+//import { computed } from 'vue'
 
 import {
-  useChatLogic,
-
+  useChatLogic
 } from './chatLogic.js'
+
+
+onMounted(() => {
+  console.log('👀 chatMessages DOM:', chatMessagesRef.value)
+})
 
 
 const {
@@ -365,7 +372,7 @@ const {
   formatDate,
   userId,
   currentBottleId
-} = useChatLogic()
+} = useChatLogic(chatMessagesRef)
 
 onMounted(() => {
   loadChatList()
@@ -376,7 +383,9 @@ const getReceiverId = () => {
   return conv?.participants.find(p => p !== userId)
 }
 
-onMounted(() => loadChatList())
+onMounted(() =>
+  loadChatList()
+)
 
 onMounted(async () => {
   /* Karte wie gehabt initialisieren … */
@@ -390,71 +399,70 @@ onMounted(async () => {
       userLon.value = pos.coords.longitude
       localStorage.setItem('userLat', userLat.value)
       localStorage.setItem('userLon', userLon.value)
-      
-      
-isAutoDetected.value = true
-  const lat = parseFloat(localStorage.getItem('userLat'))
-  const lon = parseFloat(localStorage.getItem('userLon'))
 
-      // Marker „Your Location“
+
+      isAutoDetected.value = true
+      const lat = parseFloat(localStorage.getItem('userLat'))
+      const lon = parseFloat(localStorage.getItem('userLon'))
+
+      //Marker „Your Location“
       L.marker([userLat.value, userLon.value])
         .addTo(mapInstance)
         .bindPopup('📍 Your Location')
         .openPopup()
 
-        
-    // 1. Innerer weißer Kreis
-    const whiteCircle = L.circle([lat, lon], {
-      radius: 5000,
-      color: 'black',
-      fillColor: 'transparent',
-      fillOpacity: 1,
-      weight: 2
-    }).addTo(mapInstance)
+      // 1. Innerer weißer Kreis
+      const whiteCircle = L.circle([lat, lon], {
+        radius: 5000,
+        color: 'black',
+        fillColor: 'transparent',
+        fillOpacity: 1,
+        weight: 2
+      }).addTo(mapInstance)
 
-    // 2. Welt-Polygon mit Loch (graue Fläche außen)
-const world = turf.polygon([
-  [
-    [-180, -90],
-    [180, -90],
-    [180, 90],
-    [-180, 90],
-    [-180, -90]
-  ]
-])
+      // 2. Welt-Polygon mit Loch (graue Fläche außen)
+      const world = turf.polygon([
+        [
+          [-180, -90],
+          [180, -90],
+          [180, 90],
+          [-180, 90],
+          [-180, -90]
+        ]
+      ])
 
 
       //Kreis um den Nutzerstandort als "Loch" definieren (5 km Radius)
-const hole = turf.circle([lon, lat], 5, {
-  steps: 64,  // Auflösung des Kreises
-  units: 'kilometers'
-})
+      const hole = turf.circle([lon, lat], 5, {
+        steps: 64,  // Auflösung des Kreises
+        units: 'kilometers'
+      })
 
-// Falls das ein MultiPolygon ist → in Polygon umwandelns
-let holePoly = hole
-if (hole.geometry.type === 'MultiPolygon') {
-  const firstPoly = hole.geometry.coordinates[0]
-  holePoly = turf.polygon(firstPoly, hole.properties)
-}
+      // Falls das ein MultiPolygon ist → in Polygon umwandelns
+      let holePoly = hole
+      if (hole.geometry.type === 'MultiPolygon') {
+        const firstPoly = hole.geometry.coordinates[0]
+        holePoly = turf.polygon(firstPoly, hole.properties)
+      }
 
-// Maske erstellen: Alles außerhalb des 5-km-Kreises ausgrauen
-const masked = turf.mask(world, holePoly)
+      // Maske erstellen: Alles außerhalb des 5-km-Kreises ausgrauen
+      const masked = turf.mask(world, holePoly)
 
- //Graue Maske zur Karte hinzufügen
-        L.geoJSON(masked, {
-          style: {
-            color: '#888',        //randfarbe
-            weight: 0,            //kein rand
-            fillColor: '#ddd',    //hellgrau
-            fillOpacity: 0.5      // 0 = komplett transparent, 1 = undurchsichtig
-          }
-        }).addTo(mapInstance)
-    
-    
+      //Graue Maske zur Karte hinzufügen
+      L.geoJSON(masked, {
+        style: {
+          color: '#888',        //randfarbe
+          weight: 0,            //kein rand
+          fillColor: '#ddd',    //hellgrau
+          fillOpacity: 0.5      // 0 = komplett transparent, 1 = undurchsichtig
+        }
+      }).addTo(mapInstance)
+
+
       // ---------------------------------
       // 2)   Nur Bottles im 5-km-Umkreis:
       // ---------------------------------
-      await loadNearbyBottles()        
+      await loadNearbyBottles()
     },
     err => console.warn('Geolocation-Error', err),
     { enableHighAccuracy: true, timeout: 10000 }
@@ -538,8 +546,6 @@ onMounted(async () => {
   }
 })
 
-
-
 function goToMap() {
   showSuccessModal.value = false
 
@@ -574,7 +580,7 @@ watch(
       const loc = b.location || {}
       if (!('lat' in loc && 'lon' in loc)) return
 
-      const marker = L.marker([loc.lat, loc.lon]).addTo(mapInstance)
+      const marker = L.marker([loc.lat, loc.lon], { icon: bottleIcon }).addTo(mapInstance)
         .bindPopup(`
   <small>Tags: ${(b.tags || []).join(', ')}</small><br/>
   <button onclick="window.replyToBottle('${b.bottle_id}')">💬 Reply</button>
@@ -592,18 +598,18 @@ window.replyToBottle = (bottleId) => {
   if (!bottle) return alert('Bottle not found')
 
   selectedAllBottle.value = bottle
-allDetailVisible.value = true
-showReplyInput.value = false
+  allDetailVisible.value = true
+  showReplyInput.value = false
 
 }
-  //if (bottle) {
-    //viewBottleDetail(bottle)              // zeigt das Detailfenster
-    //toggleReplyBox(bottleId)              // öffnet das Reply-Feld
-  //} else {
-    //alert('Bottle not found')
-     //viewBottleDetail(bottle)            // öffnet das Modal
-  //nextTick(() => toggleReplyBox(bottleId)) // jetzt erst Eingabefeld
-  //}
+//if (bottle) {
+//viewBottleDetail(bottle)              // zeigt das Detailfenster
+//toggleReplyBox(bottleId)              // öffnet das Reply-Feld
+//} else {
+//alert('Bottle not found')
+//viewBottleDetail(bottle)            // öffnet das Modal
+//nextTick(() => toggleReplyBox(bottleId)) // jetzt erst Eingabefeld
+//}
 //}
 
 window.tryOpen = id => {
@@ -632,10 +638,24 @@ function goToMapReply() {
   if (loc && mapInstance) {
     const coords = [loc.lat, loc.lon]
     mapInstance.setView(coords, 16)
-    L.marker(coords).addTo(mapInstance).bindPopup('📦 Reply sent here').openPopup()
+    L.marker(coords,).addTo(mapInstance).bindPopup('📦 Reply sent here').openPopup()
   }
 
   allDetailVisible.value = false
+}
+
+onMounted(() => {
+  console.log('Homepage mounted, chatMessages ref:', chatMessagesRef.value)
+})
+
+onMounted(() => {
+  console.log('🔍 chatMessages ref onMounted:', chatMessagesRef)
+  console.log('🔍 chatMessages.value:', chatMessagesRef.value)
+})
+
+
+function handleSendReply() {
+  sendReply2(chatMessagesRef)
 }
 
 </script>
@@ -718,12 +738,12 @@ form-modal {
   overflow: hidden;
   color: black;
   display: flex;
-  flex-direction: column; 
+  flex-direction: column;
 }
 
 .form-header {
   height: 5%;
-  background-color: #ddd;  
+  background-color: #ddd;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -738,7 +758,7 @@ form-modal {
   height: 95%;
   display: flex;
   flex-direction: row;
-  
+
 }
 
 .form-left {
@@ -754,7 +774,7 @@ form-modal {
   background-color: #d1cccc75;
   padding: 0;
   height: 100%;
-  max-height: 650px;
+  /*max-height: 650px;*/
   display: flex;
   flex-direction: column;
 }
@@ -770,12 +790,12 @@ form-modal {
 .form-right-content {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem;
+  padding-right: 0.5rem;
 }
 
 .form-right-reply {
   display: flex;
-   height: 100px; 
+  height: auto;
   border-top: 1px solid #ddd;
   padding: 1rem;
 }
@@ -1014,7 +1034,7 @@ h3 {
 
 .reply-input {
   width: 100%;
-  min-height: 80px;
+  min-height: 60px;
   padding: 0.5rem;
   border: 1px solid #ccc;
   border-radius: 0.5rem;
@@ -1087,15 +1107,16 @@ h3 {
 }
 
 .chat-preview {
-  font-size: 0.875rem;     
-  color: #505052;          
+  font-size: 0.875rem;
+  color: #505052;
   text-align: left;
 }
+
 .chat-info-wrapper {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.75rem; 
+  font-size: 0.75rem;
   color: rgb(104, 99, 99);
   text-align: left;
 }
@@ -1111,13 +1132,14 @@ h3 {
 
 .chat-button {
   width: 90%;
-  margin: 0 auto 1rem auto; 
+  margin: 0 auto 1rem auto;
   padding: 1rem;
   background-color: white;
   border-radius: 0.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   cursor: pointer;
 }
+
 .chat-message {
   display: flex;
   margin-bottom: 0.75rem;
@@ -1140,6 +1162,13 @@ h3 {
   word-wrap: break-word;
 }
 
+.chat-messages {
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
 
 .self-message .chat-bubble {
   background-color: #2fcc7048;
@@ -1152,5 +1181,4 @@ h3 {
   color: black;
   border-bottom-left-radius: 0;
 }
-
 </style>

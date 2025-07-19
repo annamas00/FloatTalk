@@ -1,11 +1,10 @@
 // replyLogic.js
-import { ref } from 'vue'
+import { ref, nextTick, unref } from 'vue'
 import axios from 'axios'
 import { currentBottleSenderId, currentBottleId, messageList } from './chatLogic'
 import { toRaw } from 'vue'
 import { closeDetailModal as closeAllDetailModal } from './allBottlesLogic'
 //import { showReplySuccessModal } from './throwBottleLogic'
-import { nextTick } from 'vue'
 
 
 // Reply state
@@ -15,7 +14,8 @@ export const replyContent = ref('')
 //export const currentBottleId = ref(null)
 export const messageHistory = ref([])
 export const userId = localStorage.getItem('user_id')
-export const showReplySuccessModal = ref(false)  // 🆕 eigenes Reply-Popup
+export const showReplySuccessModal = ref(false)  
+
 
 
 // Toggle reply input
@@ -36,7 +36,7 @@ export function cancelReply({ keepBottle = false } = {}) {
 
 
 
-
+//reply for bottle
 export async function sendReply(selectedAllBottle) {
   console.log('Sending reply:', replyContent.value)
 console.log('selectedAllBottle:', selectedAllBottle)
@@ -90,9 +90,30 @@ console.log('selectedAllBottle keys:', Object.keys(toRaw(selectedAllBottle)))
 } 
 
 
-export async function sendReply2() {
- //if (!currentBottleId.value) return alert('Kein Bottle gewählt')
-  //const currentBottleId = bottleRef?.value
+
+export async function scrollToBottom(refElement, maxRetries = 10) {
+  for (let i = 0; i < maxRetries; i++) {
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    const el = refElement?.value
+    if (el && el.scrollHeight > 0) {
+      el.scrollTop = el.scrollHeight
+      console.log(`✅ Scrolled to bottom after ${i + 1} attempt(s):`, el.scrollTop)
+      return
+    }
+
+    console.warn(`⏳ Waiting... (${i + 1}/${maxRetries})`)
+  }
+
+  console.warn('❌ Failed to scroll to bottom')
+}
+
+
+
+
+//reply for chat 
+export async function sendReply2(chatMessages) {
  console.log('🧪 currentBottleId in replyLogic:', currentBottleId)
 console.log('🧪 currentBottleId.value in replyLogic:', currentBottleId.value)
 
@@ -104,13 +125,6 @@ console.log('🧪 currentBottleId.value in replyLogic:', currentBottleId.value)
     alert('⚠️ Kein Bottle gewählt')
     return
   }
-  
-  //if (!currentBottleId || currentBottleId === 'null') {
-  //console.error('❌ Missing required currentBottleId fields')
-  //return
-  //} 
-
-
   const receiverId = currentBottleSenderId.value
   const content = replyContent.value?.trim()
  if (!content) {
@@ -136,7 +150,7 @@ console.log('🧪 currentBottleId.value in replyLogic:', currentBottleId.value)
       alert('❌ Text error: ' + response.data.message)
       return
     }
-    alert('Reply sent successfully!')
+    //alert('Reply sent successfully!')
 
     messageList.value.push({
   sender_id: userId,
@@ -144,21 +158,24 @@ console.log('🧪 currentBottleId.value in replyLogic:', currentBottleId.value)
   content: content,
   timestamp: new Date().toISOString()
 })
-cancelReply({ keepBottle: true })
+await nextTick()
+console.log('📦 chatMessagesRef received in sendReply2:', chatMessages)
 
+//Manueller Sofort-Scroll (Fallback oder Ergänzung)
+const el = chatMessages?.value
+if (el) {
+  el.scrollTop = el.scrollHeight
+  console.log('✅ Manuell direkt gescrollt (auch ohne Overflow)')
+} else {
+  console.warn('⚠️ chatMessages DOM-Element fehlt')
+}
+
+
+await scrollToBottom(chatMessages)
+cancelReply({ keepBottle: true })
 
   } catch (err) {
     console.error('❌ Reply failed:', err)
     alert('Failed to send reply.')
   }
 } 
-
-/* export async function loadMessageHistory(bottleId) {
-  try {
-    const res = await axios.get(`http://localhost:8000/conversation/${bottleId}/messages`)
-    messageHistory.value = res.data.messages
-    console.log("💬 Message history loaded:", messageHistory.value)
-  } catch (err) {
-    console.error("❌ Failed to load message history:", err)
-  }
-} */
