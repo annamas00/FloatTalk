@@ -348,6 +348,7 @@ const isAutoDetected = ref(false)
 const visibilityKm = ref(5)
 const maxReaders = ref(null)
 const showMyBottleModal = ref(false)
+const chatMessagesRef = ref(null)
 
 // ---------------------------------------------
 // Hilfs‐Array, damit wir alte Marker löschen
