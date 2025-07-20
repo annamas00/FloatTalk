@@ -1,11 +1,10 @@
 // replyLogic.js
-import { ref } from 'vue'
+import { ref, nextTick, unref } from 'vue'
 import axios from 'axios'
-import { currentBottleSenderId, currentBottleId, messageList } from './chatLogic'
+import { currentBottleSenderId, currentBottleId, messageList, selectedConversation, chatList, loadChatList } from './chatLogic'
 import { toRaw } from 'vue'
 import { closeDetailModal as closeAllDetailModal } from './allBottlesLogic'
 //import { showReplySuccessModal } from './throwBottleLogic'
-import { nextTick } from 'vue'
 
 
 // Reply state
@@ -15,7 +14,8 @@ export const replyContent = ref('')
 //export const currentBottleId = ref(null)
 export const messageHistory = ref([])
 export const userId = localStorage.getItem('user_id')
-export const showReplySuccessModal = ref(false)  // 🆕 eigenes Reply-Popup
+export const showReplySuccessModal = ref(false)  
+
 
 
 // Toggle reply input
@@ -35,33 +35,46 @@ export function cancelReply({ keepBottle = false } = {}) {
 }
 
 
+function moveConversationToTop(conversationId, content) {
+  
+    console.log('🧪 selectedConversation:', conversationId)
+console.log('📋 chatList:', chatList.value.map(c => c.conversation_id))
+  const index = chatList.value.findIndex(c => c.conversation_id === conversationId)
+  if (index !== -1) {
+    const convo = chatList.value.splice(index, 1)[0]
+
+    // Letzte Nachricht aktualisieren
+    convo.last_message = {
+      sender_id: userId,
+      content: content,
+      timestamp: new Date().toISOString()
+    }
+
+    console.log('🔝 Conversation moved to top:', convo)
+    chatList.value.unshift(convo)
+
+  }
+}
 
 
+//reply for bottle
 export async function sendReply(selectedAllBottle) {
   console.log('Sending reply:', replyContent.value)
 console.log('selectedAllBottle:', selectedAllBottle)
 console.log('selectedAllBottle keys:', Object.keys(toRaw(selectedAllBottle)))
-
-
   if (!selectedAllBottle ) {
     console.error('❌ Missing required selectedAllBottle fields')
     return
-    
   }
     if (!selectedAllBottle.sender_id) {
     console.error('❌ Missing sender_id in selectedAllBottle')
     return
   }
-
-
   if (!replyContent.value ) {
     console.error('❌ Missing required reply fields')
     return
   }
-
-
   try {
-
     const response = await axios.post('http://localhost:8000/reply', {
 
       bottle_id: selectedAllBottle.bottle_id,
@@ -72,17 +85,31 @@ console.log('selectedAllBottle keys:', Object.keys(toRaw(selectedAllBottle)))
     })
 
     console.log('✅ Reply sent:', response.data)
- 
-
     cancelReply()
      await nextTick()
-
     closeAllDetailModal()   
      await nextTick()
-
     showReplySuccessModal.value = true
     console.log('✅ Setting showReplySuccessModal to TRUE now!')  
+    await loadChatList()
     await nextTick() 
+    // 🔍 Suche passende Konversation (falls vorhanden)
+    const matchingConversation = chatList.value.find(c =>
+      c.bottle_id === selectedAllBottle.bottle_id &&
+      c.participants.includes(userId) &&
+      c.participants.includes(selectedAllBottle.sender_id)
+    )
+
+    if (matchingConversation) {
+      moveConversationToTop(matchingConversation.conversation_id, replyContent.value)
+
+      // (Optional) Direkt öffnen:
+      selectedConversation.value = matchingConversation.conversation_id
+      // showChatModal.value = true
+      // showChatDetailModal.value = true
+    } else {
+      console.warn('⚠️ No matching conversation found to move')
+    }
   } catch (err) {
     console.error('❌ Reply failed:', err)
     alert('Failed to send reply.')
@@ -90,9 +117,31 @@ console.log('selectedAllBottle keys:', Object.keys(toRaw(selectedAllBottle)))
 } 
 
 
-export async function sendReply2() {
- //if (!currentBottleId.value) return alert('Kein Bottle gewählt')
-  //const currentBottleId = bottleRef?.value
+
+export async function scrollToBottom(refElement, maxRetries = 10) {
+  for (let i = 0; i < maxRetries; i++) {
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    const el = refElement?.value
+    if (el && el.scrollHeight > 0) {
+      el.scrollTop = el.scrollHeight
+      console.log(`✅ Scrolled to bottom after ${i + 1} attempt(s):`, el.scrollTop)
+      return
+    }
+
+    console.warn(`⏳ Waiting... (${i + 1}/${maxRetries})`)
+  }
+
+  console.warn('❌ Failed to scroll to bottom')
+}
+
+
+
+
+//reply for chat 
+export async function sendReply2(chatMessages) {
+    console.log('🟡 sendReply2 called')
  console.log('🧪 currentBottleId in replyLogic:', currentBottleId)
 console.log('🧪 currentBottleId.value in replyLogic:', currentBottleId.value)
 
@@ -104,13 +153,6 @@ console.log('🧪 currentBottleId.value in replyLogic:', currentBottleId.value)
     alert('⚠️ Kein Bottle gewählt')
     return
   }
-  
-  //if (!currentBottleId || currentBottleId === 'null') {
-  //console.error('❌ Missing required currentBottleId fields')
-  //return
-  //} 
-
-
   const receiverId = currentBottleSenderId.value
   const content = replyContent.value?.trim()
  if (!content) {
@@ -144,21 +186,25 @@ console.log('🧪 currentBottleId.value in replyLogic:', currentBottleId.value)
   content: content,
   timestamp: new Date().toISOString()
 })
-cancelReply({ keepBottle: true })
+await nextTick()
+console.log('📦 chatMessagesRef received in sendReply2:', chatMessages)
 
+//Manueller Sofort-Scroll (Fallback oder Ergänzung)
+const el = chatMessages?.value
+if (el) {
+  el.scrollTop = el.scrollHeight
+  console.log('✅ Manuell direkt gescrollt (auch ohne Overflow)')
+} else {
+  console.warn('⚠️ chatMessages DOM-Element fehlt')
+}
+
+
+await scrollToBottom(chatMessages)
+cancelReply({ keepBottle: true })
+moveConversationToTop(selectedConversation.value, content)
 
   } catch (err) {
     console.error('❌ Reply failed:', err)
     alert('Failed to send reply.')
   }
 } 
-
-/* export async function loadMessageHistory(bottleId) {
-  try {
-    const res = await axios.get(`http://localhost:8000/conversation/${bottleId}/messages`)
-    messageHistory.value = res.data.messages
-    console.log("💬 Message history loaded:", messageHistory.value)
-  } catch (err) {
-    console.error("❌ Failed to load message history:", err)
-  }
-} */

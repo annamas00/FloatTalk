@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import axios from 'axios'
-import { fetchMyBottles } from './myBottlesLogic.js'
+import { fetchMyBottles, myBottles } from './myBottlesLogic.js'
 
 export const showForm = ref(false)
 export const bottleContent = ref('')
@@ -11,6 +11,8 @@ export const city = ref('')
 export const showSuccessModal = ref(false)
 export const ttlMinutes = ref(60)
 export const userId = localStorage.getItem('user_id')
+export const maxReaders = ref(null)
+
 
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
@@ -32,7 +34,7 @@ export function showThrowBottleForm() {
       localStorage.setItem('userLat', pos.coords.latitude)
       localStorage.setItem('userLon', pos.coords.longitude)
       reverseGeocode(pos.coords.latitude, pos.coords.longitude)
-      loadNearbyBottles()
+      loadBottles()
     },
     () => {
       // Fallback auf gespeicherte Werte
@@ -81,11 +83,15 @@ export function addTag() {
     tagList.value.length < 5 // max tags
   ) {
     tagList.value.push(value)
+    console.log('✅ Tag added:', value)
+    } else {
+    console.warn('⚠️ Tag NOT added. Value:', value)
   }
   tagInput.value = ''
 }
 
 export function handleTagKeydown(e) {
+  console.log('🧪 key pressed:', e.key)
   const key = e.key
   if (
     (key === 'Enter' || key === ' ' || key === 'Space' || key === ',' || key === 'Comma') &&
@@ -112,16 +118,11 @@ const storedCoords = localStorage.getItem('coords')
 localStorage.setItem('lastBottleLat', storedLat)
 localStorage.setItem('lastBottleLon', storedLon)
 
-
-
-
   if (!bottleContent.value || !location.value) {
     console.warn('no locations')
     
     return
   }
-
-
 
   try {
     const res = await axios.post(`${API_BASE}/add_bottle`, {
@@ -133,43 +134,32 @@ localStorage.setItem('lastBottleLon', storedLon)
       ? {
           lat: parseFloat(storedLat),
           lon: parseFloat(storedLon),
-          address : location.value, // <-- neuer Feldname city : city.value
+          address : location.value,
       }
       : JSON.parse(storedCoords),
-city: city.value
-
-
- 
+city: city.value,
+  max_readers: maxReaders.value ? parseInt(maxReaders.value) : null, 
       })
-
-
-
     console.log('✅ Server response:', res.data)
-
 
 if (res.data.status === 'texterror') {
     alert('❌ Text error: ' + res.data.message);
     return;
   }
 
-
-
-
-
     // refresh form
     showForm.value = false
     bottleContent.value = ''
-     showSuccessModal.value = true // ➤ Erfolgspopup anzeigen
+    showSuccessModal.value = true 
     location.value = ''
     tagList.value = []
     tagInput.value = ''
+    maxReaders.value = null  
         if (refreshNearby) {
       await refreshNearby()
     }
-
-       await fetchMyBottles() // ⬅️ Ergänzen
-
-
+       await fetchMyBottles() 
+console.log('🧪 Updated myBottles:', myBottles.value)
     return res.data
   } catch (err) {
     console.error('❌ Submit failed:', err)

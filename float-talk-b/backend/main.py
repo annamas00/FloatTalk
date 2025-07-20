@@ -231,7 +231,9 @@ async def add_bottle(req: Request):
         "picked_at": None,
         "reply_enabled": True,
         "city": data.get("city", ""),
-        "visibility_km": data.get("visibility_km", 5)
+        "visibility_km": data.get("visibility_km", 5),
+        "max_readers": data.get("max_readers"),
+        "reader_ids": [],
     }
     await bottles.insert_one(bottle_doc)
     return {"status": "success", "message": "Bottle stored!"}
@@ -300,7 +302,28 @@ async def send_reply(data: dict):
 
     if not all([bottle_id, sender_id, receiver_id, content]):
         return {"status": "error", "message": "Missing required fields"}
- 
+    
+      # Bottle laden
+    bottle = await bottles.find_one({"bottle_id": bottle_id})
+    if not bottle:
+        return {"status": "error", "message": "Bottle not found"}
+
+    max_readers = bottle.get("max_readers")
+    reader_ids = bottle.get("reader_ids", [])
+
+    # Prüfen, ob Limit erreicht
+    if max_readers is not None:
+        if sender_id in reader_ids:
+            return {"status": "error", "message": "You have already replied to this bottle."}
+        if len(reader_ids) >= max_readers:
+            return {"status": "error", "message": "This bottle has reached the maximum number of readers."}
+
+    # leser hinzufügen
+    await bottles.update_one(
+        {"bottle_id": bottle_id},
+        {"$addToSet": {"reader_ids": sender_id}}  # kein Duplikat
+    )
+
     conv = await conversations.find_one({"bottle_id": bottle_id})
     if not conv:
         conv_doc = {
@@ -538,14 +561,24 @@ async def nearby(lat: float, lon: float, radius: int = 5000):
     out: list[dict] = [] 
     """Alle aktuell gültigen Bottles im Umkreis (radius m)."""
     now = now_local()
-    #cursor = bottles.find({"expire_at": {"$gt": now}})
-    cursor = bottles.find({ 
-            "location.lat": {"$exists": True},
-            "location.lon": {"$exists": True},
-            # Beispiel für künftiges TTL-Feld:
-            # "expire_at": {"$gt": now}
+    cursor = bottles.find({
+    "location.lat": {"$exists": True},
+    "location.lon": {"$exists": True},
+    "$or": [
+        { "max_readers": { "$exists": False } },
+        { "max_readers": None },
+        {
+            "$expr": {
+                "$cond": [
+                    { "$gt": ["$max_readers", 0] },
+                    { "$lt": [{ "$size": { "$ifNull": ["$reader_ids", []] } }, "$max_readers"] },
+                    True
+                ]
+            }
         }
-    )
+    ]
+})
+      
 
     async for doc in cursor:
         loc = doc.get("location", {})

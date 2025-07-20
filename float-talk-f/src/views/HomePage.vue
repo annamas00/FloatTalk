@@ -373,299 +373,299 @@
       </div>
     </div>
     <div v-if="showForm" class="form-modal">
-      <div class="form-box">
+          <div class="form-box">
 
-        <h3 class="text-lg font-bold mb-3">New Bottle</h3>
+            <h3 class="text-lg font-bold mb-3">New Bottle</h3>
 
-        <textarea v-model="bottleContent" placeholder="Write your message..." class="input mb-2"></textarea>
-        <!-- taginpuit -->
-        <div class="tag-input mb-2">
-          <div v-for="(tag, index) in tagList" :key="index" class="tag-chip">
-            {{ tag }}
-            <span class="tag-close" @click="removeTag(index)">×</span>
-          </div>
-          <input v-model="tagInput" @keydown="handleTagKeydown" placeholder="Add tags" class="input-tag" />
-        </div>
-        <input v-model="location" placeholder="Enter location" class="input mb-4" :readonly="isAutoDetected" />
-
-        <!-- Sichtbarkeitsdauer der Bottle -->
-        <label class="block mb-1 text-sm font-medium">Visible for:</label>
-        <select v-model="ttlMinutes" class="input mb-2">
-          <option :value="30">30 minutes</option>
-          <option :value="60">1 hour</option>
-          <option :value="240">4 hours</option>
-          <option :value="1440">24 hours</option>
-        </select>
-        <!-- Visibility Radius -->
-        <label class="block mb-1 text-sm font-medium">Visible within: {{ visibilityKm }} km</label>
-        <div class="relative w-full">
-          <input type="range" v-model="visibilityKm" min="1" max="10" step="1"
-            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
-        </div>
-        <label class="block mb-1 text-sm font-medium">Limit readers (optional):</label>
-        <input type="number" v-model="maxReaders" min="1" placeholder="e.g. 3" class="input mb-4" />
-        <div class="flex justify-end space-x-2">
-          <button class="btn-cancel" @click="showForm = false">Cancel</button>
-          <button class="btn-submit" @click="submitBottle(loadNearbyBottles)">Send</button>
-        </div>
-      </div>
-    </div>
-    <div v-if="showSuccessModal" class="modal-overlay">
-      <div class="modal">
-        <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
-        <p class="mb-4">Your message has been thrown and saved on the map.</p>
-        <button @click="goToMap" class="btn-action">Go back to map</button>
-      </div>
-    </div>
-    <div v-if="showChatModal" class="form-modal">
-      <div class="form-box">
-
-
-        <div class="form-header">
-          <MessageSquareMore class="w-5 h-5" />
-          Chat
-          <button @click="showChatModal = false" class="text-xl absolute right-4">✕</button>
-        </div>
-
-
-        <div class="form-content">
-
-
-          <div class="form-left">
-
-            <button @click="openConversation(chat.conversation_id)" class="chat-button" v-for="chat in chatList"
-              :key="chat.conversation_id">
-
-
-
-              <div class="chat-info-wrapper">
-                <p v-if="chat.first_message" class="chat-info-text">
-                  {{chat.participants.map(p => p.nickname).join(', ')}}<br>
-                  {{ formatDate(chat.first_message.timestamp
-                  ) }}
-                </p>
+            <textarea v-model="bottleContent" placeholder="Write your message..." class="input mb-2"></textarea>
+            <!-- taginpuit -->
+            <div class="tag-input mb-2">
+              <div v-for="(tag, index) in tagList" :key="index" class="tag-chip">
+                {{ tag }}
+                <span class="tag-close" @click="removeTag(index)">×</span>
               </div>
-              <p class="chat-preview">
-                {{ chat.bottle_sender?.nickname || chat.bottle_sender?.user_id || 'Unknown' }}: {{ chat.preview }}
-              </p>
+              <input v-model="tagInput" @keydown="handleTagKeydown" placeholder="Add tags" class="input-tag" />
+            </div>
+            <input v-model="location" placeholder="Enter location" class="input mb-4" :readonly="isAutoDetected" />
 
-            </button>
+            <!-- Sichtbarkeitsdauer der Bottle -->
+            <label class="block mb-1 text-sm font-medium">Visible for:</label>
+            <select v-model="ttlMinutes" class="input mb-2">
+              <option :value="30">30 minutes</option>
+              <option :value="60">1 hour</option>
+              <option :value="240">4 hours</option>
+              <option :value="1440">24 hours</option>
+            </select>
+            <!-- Visibility Radius -->
+            <label class="block mb-1 text-sm font-medium">Visible within: {{ visibilityKm }} km</label>
+            <div class="relative w-full">
+              <input type="range" v-model="visibilityKm" min="1" max="10" step="1"
+                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+            </div>
+            <label class="block mb-1 text-sm font-medium">Limit readers (optional):</label>
+            <input type="number" v-model="maxReaders" min="1" placeholder="e.g. 3" class="input mb-4" />
+            <div class="flex justify-end space-x-2">
+              <button class="btn-cancel" @click="showForm = false">Cancel</button>
+              <button class="btn-submit" @click="submitBottle(loadNearbyBottles)">Send</button>
+            </div>
           </div>
+      </div>
+      <div v-if="showSuccessModal" class="modal-overlay">
+          <div class="modal">
+            <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
+            <p class="mb-4">Your message has been thrown and saved on the map.</p>
+            <button @click="goToMap" class="btn-action">Go back to map</button>
+          </div>
+        </div>
+        <div v-if="showChatModal" class="form-modal">
+          <div class="form-box">
 
-          <!-- .form-right -->
-          <div class="form-right" v-if="showChatDetailModal">
 
-            <div class="form-right-header">
-
-              <Handshake class="w-5 h-5" />
-
+            <div class="form-header">
+              <MessageSquareMore class="w-5 h-5" />
+              Chat
+              <button @click="showChatModal = false" class="text-xl absolute right-4">✕</button>
             </div>
 
-            <div class="form-right-content">
 
-              <div v-for="msg in messageList" :key="msg.timestamp" :class="[
-                'chat-message',
-                msg.sender_id === userId ? 'self-message' : 'other-message'
-              ]">
-                <div class="chat-bubble">
-                  <p class="text-xs text-gray-500 mb-1">{{ formatDate(msg.timestamp) }}</p>
-                  <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
+            <div class="form-content">
+
+
+              <div class="form-left">
+
+                <button @click="openConversation(chat.conversation_id)" class="chat-button" v-for="chat in chatList"
+                  :key="chat.conversation_id">
+
+
+
+                  <div class="chat-info-wrapper">
+                    <p v-if="chat.first_message" class="chat-info-text">
+                      {{chat.participants.map(p => p.nickname).join(', ')}}<br>
+                      {{ formatDate(chat.first_message.timestamp
+                      ) }}
+                    </p>
+                  </div>
+                  <p class="chat-preview">
+                    {{ chat.bottle_sender?.nickname || chat.bottle_sender?.user_id || 'Unknown' }}: {{ chat.preview }}
+                  </p>
+
+                </button>
+              </div>
+
+              <!-- .form-right -->
+              <div class="form-right" v-if="showChatDetailModal">
+
+                <div class="form-right-header">
+
+                  <Handshake class="w-5 h-5" />
+
+                </div>
+
+                <div class="form-right-content">
+
+                  <div v-for="msg in messageList" :key="msg.timestamp" :class="[
+                    'chat-message',
+                    msg.sender_id === userId ? 'self-message' : 'other-message'
+                  ]">
+                    <div class="chat-bubble">
+                      <p class="text-xs text-gray-500 mb-1">{{ formatDate(msg.timestamp) }}</p>
+                      <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
+                    </div>
+                  </div>
+
+
+                </div>
+
+                <div class="form-right-reply">
+                  <div class="form-right-reply-blank">
+                    <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
+                  </div>
+                  <div class="form-right-reply-button">
+                    <button class="btn-submit" @click="sendReply2">Send</button>
+                  </div>
                 </div>
               </div>
 
 
             </div>
+          </div>
+      </div>
+      <div v-if="allDetailVisible" class="dialog-overlay">
+          <div class="dialog-box text-black">
+            <div class="dialog-header">
+              <h2 class="dialog-title">📦 Bottle Detail</h2>
+              <button class="dialog-close" @click="closeAllDetailModal">×</button>
+            </div>
 
-            <div class="form-right-reply">
-              <div class="form-right-reply-blank">
-                <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
+            <div class="dialog-body">
+              <p class="dialog-content">{{ selectedAllBottle?.content }}</p>
+              <div class="dialog-tags" v-if="selectedAllBottle?.tags">
+                <span v-for="(tag, idx) in selectedAllBottle.tags" :key="idx" class="tag-chip">
+                  {{ tag }}
+                </span>
               </div>
-              <div class="form-right-reply-button">
-                <button class="btn-submit" @click="sendReply2">Send</button>
+
+              <!-- Reply Button -->
+              <div class="dialog-reply mt-4">
+                <div v-if="!showReplyInput" class="flex justify-end">
+                  <button class="btn-submit" @click="toggleReplyBox(selectedAllBottle?.bottle_id)">Reply</button>
+                </div>
+                <div v-else>
+                  <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
+                  <div class="flex justify-end mt-2 space-x-2">
+                    <button class="btn-cancel" @click="cancelReply">Cancel</button>
+                    <button class="btn-submit" @click="sendReply(selectedAllBottle)">Send</button>
+                  </div>
+                </div>
+                <div v-if="showSuccessModal" class="modal-overlay">
+                  <div class="modal">
+                    <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
+                    <p class="mb-4">Your message has been thrown and saved on the map.</p>
+                    <button @click="goToMap" class="btn-action">Back</button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-
-
-        </div>
       </div>
-    </div>
-    <div v-if="allDetailVisible" class="dialog-overlay">
-      <div class="dialog-box text-black">
-        <div class="dialog-header">
-          <h2 class="dialog-title">📦 Bottle Detail</h2>
-          <button class="dialog-close" @click="closeAllDetailModal">×</button>
-        </div>
-
-        <div class="dialog-body">
-          <p class="dialog-content">{{ selectedAllBottle?.content }}</p>
-          <div class="dialog-tags" v-if="selectedAllBottle?.tags">
-            <span v-for="(tag, idx) in selectedAllBottle.tags" :key="idx" class="tag-chip">
-              {{ tag }}
-            </span>
+      <div v-if="showReplySuccessModal" class="modal-overlay">
+          <div class="modal">
+            <h2 class="text-lg font-semibold mb-4">📦 Reply sent successfully!</h2>
+            <p class="mb-4">Your reply was saved.</p>
+            <button @click="goToMapReply" class="btn-action">Go back to map</button>
           </div>
-
-          <!-- Reply Button -->
-          <div class="dialog-reply mt-4">
-            <div v-if="!showReplyInput" class="flex justify-end">
-              <button class="btn-submit" @click="toggleReplyBox(selectedAllBottle?.bottle_id)">Reply</button>
+        </div>
+        <div v-if="detailVisible" class="dialog-overlay">
+          <div class="dialog-box">
+            <div class="dialog-header">
+              <h2 class="dialog-title">📩 Bottle Detail</h2>
+              <button class="dialog-close" @click="closeDetailModal">×</button>
             </div>
-            <div v-else>
-              <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
-              <div class="flex justify-end mt-2 space-x-2">
-                <button class="btn-cancel" @click="cancelReply">Cancel</button>
-                <button class="btn-submit" @click="sendReply(selectedAllBottle)">Send</button>
-              </div>
-            </div>
-            <div v-if="showSuccessModal" class="modal-overlay">
-              <div class="modal">
-                <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
-                <p class="mb-4">Your message has been thrown and saved on the map.</p>
-                <button @click="goToMap" class="btn-action">Back</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div v-if="showReplySuccessModal" class="modal-overlay">
-      <div class="modal">
-        <h2 class="text-lg font-semibold mb-4">📦 Reply sent successfully!</h2>
-        <p class="mb-4">Your reply was saved.</p>
-        <button @click="goToMapReply" class="btn-action">Go back to map</button>
-      </div>
-    </div>
-    <div v-if="detailVisible" class="dialog-overlay">
-      <div class="dialog-box">
-        <div class="dialog-header">
-          <h2 class="dialog-title">📩 Bottle Detail</h2>
-          <button class="dialog-close" @click="closeDetailModal">×</button>
-        </div>
-        <div class="dialog-body">
-          <p class="dialog-content">
-            {{ selectedBottle && selectedBottle.content }}
-          </p>
-
-          <div class="dialog-tags" v-if="selectedBottle && selectedBottle.tags">
-            <span v-for="(tag, idx) in selectedBottle.tags" :key="idx" class="tag-chip">
-              {{ tag }}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div v-if="showForm" class="form-modal">
-      <div class="form-box">
-
-        <h3 class="text-lg font-bold mb-3">New Bottle</h3>
-
-        <textarea v-model="bottleContent" placeholder="Write your message..." class="input mb-2"></textarea>
-        <!-- taginpuit -->
-        <div class="tag-input mb-2">
-          <div v-for="(tag, index) in tagList" :key="index" class="tag-chip">
-            {{ tag }}
-            <span class="tag-close" @click="removeTag(index)">×</span>
-          </div>
-          <input v-model="tagInput" @keydown="handleTagKeydown" placeholder="Add tags" class="input-tag" />
-        </div>
-        <input v-model="location" placeholder="Enter location" class="input mb-4" :readonly="isAutoDetected" />
-
-        <!-- Sichtbarkeitsdauer der Bottle -->
-        <label class="block mb-1 text-sm font-medium">Visible for:</label>
-        <select v-model="ttlMinutes" class="input mb-2">
-          <option :value="30">30 minutes</option>
-          <option :value="60">1 hour</option>
-          <option :value="240">4 hours</option>
-          <option :value="1440">24 hours</option>
-        </select>
-        <!-- Visibility Radius -->
-        <label class="block mb-1 text-sm font-medium">Visible within: {{ visibilityKm }} km</label>
-        <div class="relative w-full">
-          <input type="range" v-model="visibilityKm" min="1" max="10" step="1"
-            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
-        </div>
-        <label class="block mb-1 text-sm font-medium">Limit readers (optional):</label>
-        <input type="number" v-model="maxReaders" min="1" placeholder="e.g. 3" class="input mb-4" />
-        <div class="flex justify-end space-x-2">
-          <button class="btn-cancel" @click="showForm = false">Cancel</button>
-          <button class="btn-submit" @click="submitBottle(loadNearbyBottles)">Send</button>
-        </div>
-      </div>
-    </div>
-    <div v-if="showChatModal" class="form-modal">
-      <div class="form-box">
-
-
-        <div class="form-header">
-          <MessageSquareMore class="w-5 h-5" />
-          Chat
-          <button @click="showChatModal = false" class="text-xl absolute right-4">✕</button>
-        </div>
-
-
-        <div class="form-content">
-
-
-          <div class="form-left">
-
-            <button @click="openConversation(chat.conversation_id)" class="chat-button" v-for="chat in chatList"
-              :key="chat.conversation_id">
-
-
-
-              <div class="chat-info-wrapper">
-                <p v-if="chat.first_message" class="chat-info-text">
-                  {{chat.participants.map(p => p.nickname).join(', ')}}<br>
-                  {{ formatDate(chat.first_message.timestamp
-                  ) }}
-                </p>
-              </div>
-              <p class="chat-preview">
-                {{ chat.bottle_sender?.nickname || chat.bottle_sender?.user_id || 'Unknown' }}: {{ chat.preview }}
+            <div class="dialog-body">
+              <p class="dialog-content">
+                {{ selectedBottle && selectedBottle.content }}
               </p>
 
-            </button>
+              <div class="dialog-tags" v-if="selectedBottle && selectedBottle.tags">
+                <span v-for="(tag, idx) in selectedBottle.tags" :key="idx" class="tag-chip">
+                  {{ tag }}
+                </span>
+              </div>
+            </div>
           </div>
+      </div>
+      <div v-if="showForm" class="form-modal">
+          <div class="form-box">
 
-          <!-- .form-right -->
-          <div class="form-right" v-if="showChatDetailModal">
+            <h3 class="text-lg font-bold mb-3">New Bottle</h3>
 
-            <div class="form-right-header">
+            <textarea v-model="bottleContent" placeholder="Write your message..." class="input mb-2"></textarea>
+            <!-- taginpuit -->
+            <div class="tag-input mb-2">
+              <div v-for="(tag, index) in tagList" :key="index" class="tag-chip">
+                {{ tag }}
+                <span class="tag-close" @click="removeTag(index)">×</span>
+              </div>
+              <input v-model="tagInput" @keydown="handleTagKeydown" placeholder="Add tags" class="input-tag" />
+            </div>
+            <input v-model="location" placeholder="Enter location" class="input mb-4" :readonly="isAutoDetected" />
 
-              <Handshake class="w-5 h-5" />
+            <!-- Sichtbarkeitsdauer der Bottle -->
+            <label class="block mb-1 text-sm font-medium">Visible for:</label>
+            <select v-model="ttlMinutes" class="input mb-2">
+              <option :value="30">30 minutes</option>
+              <option :value="60">1 hour</option>
+              <option :value="240">4 hours</option>
+              <option :value="1440">24 hours</option>
+            </select>
+            <!-- Visibility Radius -->
+            <label class="block mb-1 text-sm font-medium">Visible within: {{ visibilityKm }} km</label>
+            <div class="relative w-full">
+              <input type="range" v-model="visibilityKm" min="1" max="10" step="1"
+                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+            </div>
+            <label class="block mb-1 text-sm font-medium">Limit readers (optional):</label>
+            <input type="number" v-model="maxReaders" min="1" placeholder="e.g. 3" class="input mb-4" />
+            <div class="flex justify-end space-x-2">
+              <button class="btn-cancel" @click="showForm = false">Cancel</button>
+              <button class="btn-submit" @click="submitBottle(loadNearbyBottles)">Send</button>
+            </div>
+          </div>
+        </div>
+        <div v-if="showChatModal" class="form-modal">
+          <div class="form-box">
 
+
+            <div class="form-header">
+              <MessageSquareMore class="w-5 h-5" />
+              Chat
+              <button @click="showChatModal = false" class="text-xl absolute right-4">✕</button>
             </div>
 
-            <div class="form-right-content">
 
-              <div v-for="msg in messageList" :key="msg.timestamp" :class="[
-                'chat-message',
-                msg.sender_id === userId ? 'self-message' : 'other-message'
-              ]">
-                <div class="chat-bubble">
-                  <p class="text-xs text-gray-500 mb-1">{{ formatDate(msg.timestamp) }}</p>
-                  <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
+            <div class="form-content">
+
+
+              <div class="form-left">
+
+                <button @click="openConversation(chat.conversation_id)" class="chat-button" v-for="chat in chatList"
+                  :key="chat.conversation_id">
+
+
+
+                  <div class="chat-info-wrapper">
+                    <p v-if="chat.first_message" class="chat-info-text">
+                      {{chat.participants.map(p => p.nickname).join(', ')}}<br>
+                      {{ formatDate(chat.first_message.timestamp
+                      ) }}
+                    </p>
+                  </div>
+                  <p class="chat-preview">
+                    {{ chat.bottle_sender?.nickname || chat.bottle_sender?.user_id || 'Unknown' }}: {{ chat.preview }}
+                  </p>
+
+                </button>
+              </div>
+
+              <!-- .form-right -->
+              <div class="form-right" v-if="showChatDetailModal">
+
+                <div class="form-right-header">
+
+                  <Handshake class="w-5 h-5" />
+
+                </div>
+
+                <div class="form-right-content">
+
+                  <div v-for="msg in messageList" :key="msg.timestamp" :class="[
+                    'chat-message',
+                    msg.sender_id === userId ? 'self-message' : 'other-message'
+                  ]">
+                    <div class="chat-bubble">
+                      <p class="text-xs text-gray-500 mb-1">{{ formatDate(msg.timestamp) }}</p>
+                      <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
+                    </div>
+                  </div>
+
+
+                </div>
+
+                <div class="form-right-reply">
+                  <div class="form-right-reply-blank">
+                    <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
+                  </div>
+                  <div class="form-right-reply-button">
+                    <button class="btn-submit" @click="sendReply2">Send</button>
+                  </div>
                 </div>
               </div>
 
 
             </div>
-
-            <div class="form-right-reply">
-              <div class="form-right-reply-blank">
-                <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
-              </div>
-              <div class="form-right-reply-button">
-                <button class="btn-submit" @click="sendReply2">Send</button>
-              </div>
-            </div>
           </div>
-
-
         </div>
-      </div>
     </div>
-  </div>
 </template>
 
 <script setup>
