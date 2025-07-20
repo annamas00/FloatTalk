@@ -12,3 +12,5 @@ for backend:throw a bottle
 cd float-talk-b/backend
 pip install -r requirements.txt
 uvicorn main:app --reload
+
+<img width="300" height="300" alt="frame (1)" src="https://github.com/user-attachments/assets/f7ec3741-2ba4-48fa-b1c9-1ca59571ed28" />
