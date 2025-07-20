@@ -1,11 +1,13 @@
 <template>
-  <RouterView />
+  <div :class="isHomeLayout ? 'main-layout' : ''">
+    <router-view />
+  </div>
 </template>
 
 
 
 <script setup>
-import { ref, watchEffect, nextTick } from 'vue';
+import { ref, watchEffect, nextTick, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { getOrCreateUserId } from './auth.js';
 import { logEvent } from './logger.js';
@@ -22,7 +24,7 @@ const nickname = ref('Anonymous');
 const nicknameInput = ref('');
 const userId = ref('');
 const route = useRoute();
-
+const isHomeLayout = computed(() => route.path === '/home')
 delete L.Icon.Default.prototype._getIconUrl;
 
 L.Icon.Default.mergeOptions({
@@ -39,25 +41,7 @@ watchEffect(async () => {
   userId.value = await getOrCreateUserId();
   nickname.value = localStorage.getItem('nickname') || 'Anonymous';
 
-  const map = L.map('map').setView([48.1351, 11.5820], 12); // Munich
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
-
-  dummyBottles.forEach(bottle => {
-    const marker = L.marker(bottle.coords).addTo(map);
-    marker.bindTooltip(bottle.title, {
-      permanent: false,
-      direction: 'top',
-      className: 'text-sm'
-    });
-    marker.bindPopup(`
-      <strong>${bottle.title}</strong><br/>
-      <p style="margin-top: 0.5em;">${bottle.message}</p>
-      <small>📍 Zip Code: ${bottle.zip}</small>
-    `);
   });
-});
 
 
 
@@ -65,13 +49,20 @@ watchEffect(async () => {
 </script>
 
 <style>
-html,
-body,
-#app {
+html, body, #app {
   margin: 0;
   padding: 0;
-  height: 100%;
+  height: auto;
+  min-height: 100dvh;
   width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  display: block !important; /* Force override */
+}
+
+.main-layout {
+  height: 100dvh;
+  overflow: hidden;
 }
 
 

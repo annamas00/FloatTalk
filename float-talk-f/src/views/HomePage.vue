@@ -1,42 +1,43 @@
 <template>
-  <div class="grid-container">
+  <div v-if="!isMobile" class="grid-container">
     <div class="map-container" id="map"></div>
 
     <div class="sidebar">
       <!-- link sidebar -->
 
 
-     
 
-     <div class="function-button">
-  <div class="flex-icon-group">
-    <router-link to="/profile" class="profile-btn" title="Profile">
-      <UserCircle class="w-7 h-7" />
-    </router-link>
 
-    <button @click="prepareThrowForm" class="btn-action">
-      <div class="btn-inner">
-        <Send class="w-5 h-5" />
-      </div>
-    </button>
+      <div class="function-button">
+        <div class="flex-icon-group">
+          <button @click="$router.push('/profile')" class="btn-action">
+            <div class="btn-inner">
+              <UserCircle />
+            </div>
+          </button>
+          <button @click="prepareThrowForm" class="btn-action">
+            <div class="btn-inner">
+              <Send class="w-5 h-5" />
+            </div>
+          </button>
 
-    <button @click="showChatModal = true" class="btn-action">
-      <div class="btn-inner">
-        <MessageSquareMore class="w-5 h-5" />
-      </div>
-    </button>
+          <button @click="showChatModal = true" class="btn-action">
+            <div class="btn-inner">
+              <MessageSquareMore class="w-5 h-5" />
+            </div>
+          </button>
 
-   <button @click="showMyBottleModal = true" class="btn-action">
-  <div class="btn-inner">
-    <Mails class="w-5 h-5" />
-  </div>
-</button>
+          <button @click="showMyBottleModal = true" class="btn-action">
+            <div class="btn-inner">
+              <Mails class="w-5 h-5" />
+            </div>
+          </button>
 
-  
-</div>
 
-      
-      
+        </div>
+
+
+
 
       </div>
       <!-- user -->
@@ -48,47 +49,47 @@
         </div> -->
 
 
-<!-- My Bottles Modal -->
-<div v-if="showMyBottleModal" class="form-modal">
-  <div class="form-box">
-    <div class="form-header">
-      <Mails class="w-5 h-5" />
-      <h2 class="dialog-title"> Bottle Detail</h2>
-      <button @click="showMyBottleModal = false" class="text-xl absolute right-4">✕</button>
-    </div>
-
-    <div class="mybottle-content">
-   
-        <div class="chat-button" v-for="bottle in myBottles" :key="bottle.bottle_id">
-         
-            <div class="chat-info-wrapper">
-              <p class="dialog-tags">
-                <CalendarFold class="w-4 h-4" />
-                {{  formatDate(bottle.timestamp)}} 
-              </p>
-
-               <div class="dialog-tags" >
-               <div v-if="bottle.tags?.length" class="flex items-center gap-1 text-sm text-gray-600">
-                  <Tag class="w-4 h-4" />
-                  {{ bottle.tags.join(', ') }}
-              </div>
-
-              </div>
+        <!-- My Bottles Modal -->
+        <div v-if="showMyBottleModal" class="form-modal">
+          <div class="form-box">
+            <div class="form-header">
+              <Mails class="w-5 h-5" />
+              <h2 class="dialog-title"> Bottle Detail</h2>
+              <button @click="showMyBottleModal = false" class="text-xl absolute right-4">✕</button>
             </div>
-             <p class="dialog-content">
-            <p class="bottle-details">{{ bottle.content.slice(0, 30) }}</p>
-         </p>
+
+            <div class="mybottle-content">
+
+              <div class="chat-button" v-for="bottle in myBottles" :key="bottle.bottle_id">
+
+                <div class="chat-info-wrapper">
+                  <p class="dialog-tags">
+                    <CalendarFold class="w-4 h-4" />
+                    {{ formatDate(bottle.timestamp) }}
+                  </p>
+
+                  <div class="dialog-tags">
+                    <div v-if="bottle.tags?.length" class="flex items-center gap-1 text-sm text-gray-600">
+                      <Tag class="w-4 h-4" />
+                      {{ bottle.tags.join(', ') }}
+                    </div>
+
+                  </div>
+                </div>
+                <div class="dialog-content">
+                  <p class="bottle-details">{{ bottle.content.slice(0, 30) }}</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </div>
-      
-    </div>
-  </div>
-</div>
 
 
         <!-- new windows -->
         <div v-if="showForm" class="form-modal">
           <div class="form-box">
-           
+
             <h3 class="text-lg font-bold mb-3">New Bottle</h3>
 
             <textarea v-model="bottleContent" placeholder="Write your message..." class="input mb-2"></textarea>
@@ -133,87 +134,84 @@
         </div>
 
         <!-- Chat List Modal -->
-        
-    <div v-if="showChatModal" class="form-modal">
-            <div class="form-box">
-              
-            
-              <div class="form-header">
-<MessageSquareMore class="w-5 h-5" />
-                Chat
-                <button @click="showChatModal = false" class="text-xl absolute right-4">✕</button>
+
+        <div v-if="showChatModal" class="form-modal">
+          <div class="form-box">
+
+
+            <div class="form-header">
+              <MessageSquareMore class="w-5 h-5" />
+              Chat
+              <button @click="showChatModal = false" class="text-xl absolute right-4">✕</button>
+            </div>
+
+
+            <div class="form-content">
+
+
+              <div class="form-left">
+
+                <button @click="openConversation(chat.conversation_id)" class="chat-button" v-for="chat in chatList"
+                  :key="chat.conversation_id">
+
+
+
+                  <div class="chat-info-wrapper">
+                    <p v-if="chat.first_message" class="chat-info-text">
+                      {{chat.participants.map(p => p.nickname).join(', ')}}<br>
+                      {{ formatDate(chat.first_message.timestamp
+                      ) }}
+                    </p>
+                  </div>
+                  <p class="chat-preview">
+                    {{ chat.bottle_sender?.nickname || chat.bottle_sender?.user_id || 'Unknown' }}: {{ chat.preview }}
+                  </p>
+
+                </button>
               </div>
 
-             
-              <div class="form-content">
-                
-                
-                <div class="form-left">
+              <!-- .form-right -->
+              <div class="form-right" v-if="showChatDetailModal">
 
-                  <button @click="openConversation(chat.conversation_id)" class="chat-button" v-for="chat in chatList" :key="chat.conversation_id">
-                    
-                    
-                
-                      <div class="chat-info-wrapper">
-                        <p v-if="chat.first_message" class="chat-info-text">
-                          {{ chat.participants.map(p => p.nickname).join(', ') }}<br>
-                          {{ formatDate(chat.first_message.timestamp
-                          ) }}
-                        </p>
-                      </div>
-                      <p class="chat-preview">
-                        {{ chat.bottle_sender?.nickname || chat.bottle_sender?.user_id || 'Unknown' }}: {{ chat.preview }}
-                      </p>
-                    
-                  </button>
+                <div class="form-right-header">
+
+                  <Handshake class="w-5 h-5" />
+
                 </div>
 
-              <!-- .form-right -->
-                  <div class="form-right" v-if="showChatDetailModal">
-                   
-                    <div class="form-right-header">
-                     
-                     <Handshake class="w-5 h-5" />
-                      
-                    </div>
+                <div class="form-right-content">
 
-                    <div class="form-right-content">
-
-                      <div
-                          v-for="msg in messageList"
-                          :key="msg.timestamp"
-                          :class="[
-                            'chat-message',
-                            msg.sender_id === userId ? 'self-message' : 'other-message'
-                          ]"
-                        >
-            <div class="chat-bubble">
-              <p class="text-xs text-gray-500 mb-1">{{ formatDate(msg.timestamp) }}</p>
-              <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
-            </div>
-          </div>
-
-
-                    </div>
-
-                    <div class="form-right-reply">
-                      <div class="form-right-reply-blank">
-                        <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
-                      </div>
-                      <div class="form-right-reply-button">
-                        <button class="btn-submit" @click="sendReply2">Send</button>
-                      </div>
+                  <div v-for="msg in messageList" :key="msg.timestamp" :class="[
+                    'chat-message',
+                    msg.sender_id === userId ? 'self-message' : 'other-message'
+                  ]">
+                    <div class="chat-bubble">
+                      <p class="text-xs text-gray-500 mb-1">{{ formatDate(msg.timestamp) }}</p>
+                      <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
                     </div>
                   </div>
 
-                
+
+                </div>
+
+                <div class="form-right-reply">
+                  <div class="form-right-reply-blank">
+                    <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
+                  </div>
+                  <div class="form-right-reply-button">
+                    <button class="btn-submit" @click="sendReply2">Send</button>
+                  </div>
+                </div>
               </div>
+
+
             </div>
           </div>
+        </div>
 
 
         <!-- All Bottles dropdown -->
-       <!--  <div class="w-full mt-4">
+        <!--  <div class="w-full mt-4">
           <button @click="toggleAllDropdown" class="btn-action w-full flex justify-between items-center">
             <span>All Bottles</span>
             <span>{{ allDropdownOpen ? '▲' : '▼' }}</span>
@@ -255,23 +253,23 @@
                   </div>
                 </div>
                 <div v-if="showSuccessModal" class="modal-overlay">
-                 <div class="modal">
-                  <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
-                  <p class="mb-4">Your message has been thrown and saved on the map.</p>
-                  <button @click="goToMap" class="btn-action">Back</button>
-                 </div>
-               </div>
+                  <div class="modal">
+                    <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
+                    <p class="mb-4">Your message has been thrown and saved on the map.</p>
+                    <button @click="goToMap" class="btn-action">Back</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <div v-if="showReplySuccessModal" class="modal-overlay">
-        <div class="modal">
-          <h2 class="text-lg font-semibold mb-4">📦 Reply sent successfully!</h2>
-          <p class="mb-4">Your reply was saved.</p>
-          <button @click="goToMapReply" class="btn-action">Go back to map</button>
+        <div v-if="showReplySuccessModal" class="modal-overlay">
+          <div class="modal">
+            <h2 class="text-lg font-semibold mb-4">📦 Reply sent successfully!</h2>
+            <p class="mb-4">Your reply was saved.</p>
+            <button @click="goToMapReply" class="btn-action">Go back to map</button>
+          </div>
         </div>
-      </div>
 
         <!-- check my bottle -->
         <div v-if="detailVisible" class="dialog-overlay">
@@ -296,7 +294,7 @@
 
         <!-- Dropdown toggle button -->
 
-      <!--   <div class="w-full mt-4">
+        <!--   <div class="w-full mt-4">
           <button @click="toggleDropdown" class="btn-action w-full flex justify-between items-center">
             <span>my Bottles</span>
             <span>{{ dropdownOpen ? '▲' : '▼' }}</span>
@@ -310,13 +308,362 @@
           </div>
         </div> -->
 
-       
+
       </div>
-              <div class="icon">
-                 <Waves class="w-5 h-5" />
-                  Float
-                  Talk
+      <div class="icon">
+        <Waves class="w-5 h-5" />
+        Float
+        Talk
+      </div>
+    </div>
+  </div>
+  <div v-if="isMobile" class="mobile-layout">
+    <div id="map" class="map-area"></div>
+    <div class="mobile-button-bar">
+      <button @click="$router.push('/profile')" class="mobile-btn">
+        <UserCircle class="w-6 h-6 mx-auto" />
+        <p class="text-xs">Profile</p>
+      </button>
+      <button @click="prepareThrowForm" class="mobile-btn">
+        <Send class="w-6 h-6 mx-auto" />
+        <p class="text-xs">Throw</p>
+      </button>
+      <button @click="showChatModal = true" class="mobile-btn">
+        <MessageSquareMore class="w-6 h-6 mx-auto" />
+        <p class="text-xs">Chat</p>
+      </button>
+      <button @click="showMyBottleModal = true" class="mobile-btn">
+        <Mails class="w-6 h-6 mx-auto" />
+        <p class="text-xs">My Bottles</p>
+      </button>
+    </div>
+
+    <div v-if="showMyBottleModal" class="form-modal">
+      <div class="form-box">
+        <div class="form-header">
+          <Mails class="w-5 h-5" />
+          <h2 class="dialog-title"> Bottle Detail</h2>
+          <button @click="showMyBottleModal = false" class="text-xl absolute right-4">✕</button>
+        </div>
+
+        <div class="mybottle-content">
+
+          <div class="chat-button" v-for="bottle in myBottles" :key="bottle.bottle_id">
+
+            <div class="chat-info-wrapper">
+              <p class="dialog-tags">
+                <CalendarFold class="w-4 h-4" />
+                {{ formatDate(bottle.timestamp) }}
+              </p>
+
+              <div class="dialog-tags">
+                <div v-if="bottle.tags?.length" class="flex items-center gap-1 text-sm text-gray-600">
+                  <Tag class="w-4 h-4" />
+                  {{ bottle.tags.join(', ') }}
+                </div>
+
               </div>
+            </div>
+            <div class="dialog-content">
+              <p class="bottle-details">{{ bottle.content.slice(0, 30) }}</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <div v-if="showForm" class="form-modal">
+      <div class="form-box">
+
+        <h3 class="text-lg font-bold mb-3">New Bottle</h3>
+
+        <textarea v-model="bottleContent" placeholder="Write your message..." class="input mb-2"></textarea>
+        <!-- taginpuit -->
+        <div class="tag-input mb-2">
+          <div v-for="(tag, index) in tagList" :key="index" class="tag-chip">
+            {{ tag }}
+            <span class="tag-close" @click="removeTag(index)">×</span>
+          </div>
+          <input v-model="tagInput" @keydown="handleTagKeydown" placeholder="Add tags" class="input-tag" />
+        </div>
+        <input v-model="location" placeholder="Enter location" class="input mb-4" :readonly="isAutoDetected" />
+
+        <!-- Sichtbarkeitsdauer der Bottle -->
+        <label class="block mb-1 text-sm font-medium">Visible for:</label>
+        <select v-model="ttlMinutes" class="input mb-2">
+          <option :value="30">30 minutes</option>
+          <option :value="60">1 hour</option>
+          <option :value="240">4 hours</option>
+          <option :value="1440">24 hours</option>
+        </select>
+        <!-- Visibility Radius -->
+        <label class="block mb-1 text-sm font-medium">Visible within: {{ visibilityKm }} km</label>
+        <div class="relative w-full">
+          <input type="range" v-model="visibilityKm" min="1" max="10" step="1"
+            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+        </div>
+        <label class="block mb-1 text-sm font-medium">Limit readers (optional):</label>
+        <input type="number" v-model="maxReaders" min="1" placeholder="e.g. 3" class="input mb-4" />
+        <div class="flex justify-end space-x-2">
+          <button class="btn-cancel" @click="showForm = false">Cancel</button>
+          <button class="btn-submit" @click="submitBottle(loadNearbyBottles)">Send</button>
+        </div>
+      </div>
+    </div>
+    <div v-if="showSuccessModal" class="modal-overlay">
+      <div class="modal">
+        <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
+        <p class="mb-4">Your message has been thrown and saved on the map.</p>
+        <button @click="goToMap" class="btn-action">Go back to map</button>
+      </div>
+    </div>
+    <div v-if="showChatModal" class="form-modal">
+      <div class="form-box">
+
+
+        <div class="form-header">
+          <MessageSquareMore class="w-5 h-5" />
+          Chat
+          <button @click="showChatModal = false" class="text-xl absolute right-4">✕</button>
+        </div>
+
+
+        <div class="form-content">
+
+
+          <div class="form-left">
+
+            <button @click="openConversation(chat.conversation_id)" class="chat-button" v-for="chat in chatList"
+              :key="chat.conversation_id">
+
+
+
+              <div class="chat-info-wrapper">
+                <p v-if="chat.first_message" class="chat-info-text">
+                  {{chat.participants.map(p => p.nickname).join(', ')}}<br>
+                  {{ formatDate(chat.first_message.timestamp
+                  ) }}
+                </p>
+              </div>
+              <p class="chat-preview">
+                {{ chat.bottle_sender?.nickname || chat.bottle_sender?.user_id || 'Unknown' }}: {{ chat.preview }}
+              </p>
+
+            </button>
+          </div>
+
+          <!-- .form-right -->
+          <div class="form-right" v-if="showChatDetailModal">
+
+            <div class="form-right-header">
+
+              <Handshake class="w-5 h-5" />
+
+            </div>
+
+            <div class="form-right-content">
+
+              <div v-for="msg in messageList" :key="msg.timestamp" :class="[
+                'chat-message',
+                msg.sender_id === userId ? 'self-message' : 'other-message'
+              ]">
+                <div class="chat-bubble">
+                  <p class="text-xs text-gray-500 mb-1">{{ formatDate(msg.timestamp) }}</p>
+                  <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
+                </div>
+              </div>
+
+
+            </div>
+
+            <div class="form-right-reply">
+              <div class="form-right-reply-blank">
+                <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
+              </div>
+              <div class="form-right-reply-button">
+                <button class="btn-submit" @click="sendReply2">Send</button>
+              </div>
+            </div>
+          </div>
+
+
+        </div>
+      </div>
+    </div>
+    <div v-if="allDetailVisible" class="dialog-overlay">
+      <div class="dialog-box text-black">
+        <div class="dialog-header">
+          <h2 class="dialog-title">📦 Bottle Detail</h2>
+          <button class="dialog-close" @click="closeAllDetailModal">×</button>
+        </div>
+
+        <div class="dialog-body">
+          <p class="dialog-content">{{ selectedAllBottle?.content }}</p>
+          <div class="dialog-tags" v-if="selectedAllBottle?.tags">
+            <span v-for="(tag, idx) in selectedAllBottle.tags" :key="idx" class="tag-chip">
+              {{ tag }}
+            </span>
+          </div>
+
+          <!-- Reply Button -->
+          <div class="dialog-reply mt-4">
+            <div v-if="!showReplyInput" class="flex justify-end">
+              <button class="btn-submit" @click="toggleReplyBox(selectedAllBottle?.bottle_id)">Reply</button>
+            </div>
+            <div v-else>
+              <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
+              <div class="flex justify-end mt-2 space-x-2">
+                <button class="btn-cancel" @click="cancelReply">Cancel</button>
+                <button class="btn-submit" @click="sendReply(selectedAllBottle)">Send</button>
+              </div>
+            </div>
+            <div v-if="showSuccessModal" class="modal-overlay">
+              <div class="modal">
+                <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
+                <p class="mb-4">Your message has been thrown and saved on the map.</p>
+                <button @click="goToMap" class="btn-action">Back</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div v-if="showReplySuccessModal" class="modal-overlay">
+      <div class="modal">
+        <h2 class="text-lg font-semibold mb-4">📦 Reply sent successfully!</h2>
+        <p class="mb-4">Your reply was saved.</p>
+        <button @click="goToMapReply" class="btn-action">Go back to map</button>
+      </div>
+    </div>
+    <div v-if="detailVisible" class="dialog-overlay">
+      <div class="dialog-box">
+        <div class="dialog-header">
+          <h2 class="dialog-title">📩 Bottle Detail</h2>
+          <button class="dialog-close" @click="closeDetailModal">×</button>
+        </div>
+        <div class="dialog-body">
+          <p class="dialog-content">
+            {{ selectedBottle && selectedBottle.content }}
+          </p>
+
+          <div class="dialog-tags" v-if="selectedBottle && selectedBottle.tags">
+            <span v-for="(tag, idx) in selectedBottle.tags" :key="idx" class="tag-chip">
+              {{ tag }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div v-if="showForm" class="form-modal">
+      <div class="form-box">
+
+        <h3 class="text-lg font-bold mb-3">New Bottle</h3>
+
+        <textarea v-model="bottleContent" placeholder="Write your message..." class="input mb-2"></textarea>
+        <!-- taginpuit -->
+        <div class="tag-input mb-2">
+          <div v-for="(tag, index) in tagList" :key="index" class="tag-chip">
+            {{ tag }}
+            <span class="tag-close" @click="removeTag(index)">×</span>
+          </div>
+          <input v-model="tagInput" @keydown="handleTagKeydown" placeholder="Add tags" class="input-tag" />
+        </div>
+        <input v-model="location" placeholder="Enter location" class="input mb-4" :readonly="isAutoDetected" />
+
+        <!-- Sichtbarkeitsdauer der Bottle -->
+        <label class="block mb-1 text-sm font-medium">Visible for:</label>
+        <select v-model="ttlMinutes" class="input mb-2">
+          <option :value="30">30 minutes</option>
+          <option :value="60">1 hour</option>
+          <option :value="240">4 hours</option>
+          <option :value="1440">24 hours</option>
+        </select>
+        <!-- Visibility Radius -->
+        <label class="block mb-1 text-sm font-medium">Visible within: {{ visibilityKm }} km</label>
+        <div class="relative w-full">
+          <input type="range" v-model="visibilityKm" min="1" max="10" step="1"
+            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+        </div>
+        <label class="block mb-1 text-sm font-medium">Limit readers (optional):</label>
+        <input type="number" v-model="maxReaders" min="1" placeholder="e.g. 3" class="input mb-4" />
+        <div class="flex justify-end space-x-2">
+          <button class="btn-cancel" @click="showForm = false">Cancel</button>
+          <button class="btn-submit" @click="submitBottle(loadNearbyBottles)">Send</button>
+        </div>
+      </div>
+    </div>
+    <div v-if="showChatModal" class="form-modal">
+      <div class="form-box">
+
+
+        <div class="form-header">
+          <MessageSquareMore class="w-5 h-5" />
+          Chat
+          <button @click="showChatModal = false" class="text-xl absolute right-4">✕</button>
+        </div>
+
+
+        <div class="form-content">
+
+
+          <div class="form-left">
+
+            <button @click="openConversation(chat.conversation_id)" class="chat-button" v-for="chat in chatList"
+              :key="chat.conversation_id">
+
+
+
+              <div class="chat-info-wrapper">
+                <p v-if="chat.first_message" class="chat-info-text">
+                  {{chat.participants.map(p => p.nickname).join(', ')}}<br>
+                  {{ formatDate(chat.first_message.timestamp
+                  ) }}
+                </p>
+              </div>
+              <p class="chat-preview">
+                {{ chat.bottle_sender?.nickname || chat.bottle_sender?.user_id || 'Unknown' }}: {{ chat.preview }}
+              </p>
+
+            </button>
+          </div>
+
+          <!-- .form-right -->
+          <div class="form-right" v-if="showChatDetailModal">
+
+            <div class="form-right-header">
+
+              <Handshake class="w-5 h-5" />
+
+            </div>
+
+            <div class="form-right-content">
+
+              <div v-for="msg in messageList" :key="msg.timestamp" :class="[
+                'chat-message',
+                msg.sender_id === userId ? 'self-message' : 'other-message'
+              ]">
+                <div class="chat-bubble">
+                  <p class="text-xs text-gray-500 mb-1">{{ formatDate(msg.timestamp) }}</p>
+                  <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
+                </div>
+              </div>
+
+
+            </div>
+
+            <div class="form-right-reply">
+              <div class="form-right-reply-blank">
+                <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
+              </div>
+              <div class="form-right-reply-button">
+                <button class="btn-submit" @click="sendReply2">Send</button>
+              </div>
+            </div>
+          </div>
+
+
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -329,7 +676,7 @@ import axios from 'axios'
 import markerIcon2x from '../assets/leaflet/marker-icon-2x.png'
 import markerIcon from '../assets/leaflet/marker-icon.png'
 import markerShadow from '../assets/leaflet/marker-shadow.png'
-import { Send, BookOpen, UserCircle, MessageSquareMore,Mails,Bird,Tag,CalendarFold,Handshake, Waves} from 'lucide-vue-next'
+import { Send, BookOpen, UserCircle, MessageSquareMore, Mails, Bird, Tag, CalendarFold, Handshake, Waves } from 'lucide-vue-next'
 import { watch } from 'vue'
 import { ttlMinutes } from './throwBottleLogic.js'
 import * as turf from '@turf/turf'
@@ -337,7 +684,7 @@ import * as turf from '@turf/turf'
 const API_BASE =
   import.meta.env.VITE_API_BASE || 'http://localhost:8000'
 
-  
+
 const isAutoDetected = ref(false)
 
 const visibilityKm = ref(5)          // required
@@ -348,10 +695,10 @@ const showMyBottleModal = ref(false)
 // Hilfs‐Array, damit wir alte Marker löschen
 // ---------------------------------------------
 const allBottleMarkers = []
-const userLat  = ref(null)
-const userLon  = ref(null)
+const userLat = ref(null)
+const userLon = ref(null)
 
-
+const isMobile = ref(false)
 import {
   showForm,
   bottleContent,
@@ -383,7 +730,7 @@ onMounted(() => {
 })
 //onMounted(() => {
 
-  //fetchAllBottles()
+//fetchAllBottles()
 //})
 
 
@@ -408,7 +755,7 @@ import {
   toggleReplyBox,
   cancelReply,
   sendReply2,
-  sendReply, 
+  sendReply,
   showReplySuccessModal
 } from './replyLogic.js'
 
@@ -446,90 +793,160 @@ const getReceiverId = () => {
   return conv?.participants.find(p => p !== userId)
 }
 
-onMounted(() => loadChatList())
-
 onMounted(async () => {
-  /* Karte wie gehabt initialisieren … */
+  await nextTick()
 
-  /* ------------------------------------
-     1)   Koordinate vom Nutzer holen
-  ------------------------------------ */
+  const mapContainer = document.getElementById('map')
+  if (!mapContainer) {
+    console.error('❌ Map container not found!')
+    return
+  }
+
+  // Initialize Leaflet map
+  if (!mapInstance) {
+    mapInstance = L.map(mapContainer).setView([48.1351, 11.5820], 13)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(mapInstance)
+    map.value = mapInstance
+  } else {
+    console.warn('⚠️ Map is already initialized')
+  }
+
+  // Ensure tiles render after layout
+  setTimeout(() => {
+    mapInstance.invalidateSize()
+  }, 300)
+
+
+  // -------------------------------------
+  // Load coords from localStorage
+  // -------------------------------------
+  const savedLat = localStorage.getItem('userLat')
+  const savedLon = localStorage.getItem('userLon')
+
+  if (savedLat && savedLon) {
+    const lat = parseFloat(savedLat)
+    const lon = parseFloat(savedLon)
+
+    const marker = L.marker([lat, lon])
+      .addTo(mapInstance)
+      .bindPopup('📍 Your Location')
+      .openPopup()
+
+    mapInstance.setView([lat, lon], 13)
+  }
+
+  // -------------------------------------
+  // Load bottle from ?lat=...&lon=...&msg=...
+  // -------------------------------------
+  const query = new URLSearchParams(window.location.search)
+  const queryLat = query.get('lat')
+  const queryLon = query.get('lon')
+  const msg = query.get('msg')
+  const storedCoords = localStorage.getItem('coords' || '{}') // ← you had this, kept for consistency
+
+  if (queryLat && queryLon && msg) {
+    const marker = L.marker([parseFloat(queryLat), parseFloat(queryLon)])
+      .addTo(map.value)
+      .bindPopup(`<strong>📦 New Bottle:</strong><br/>${msg}`)
+      .openPopup()
+
+    mapInstance.setView([parseFloat(queryLat), parseFloat(queryLon)], 14)
+    window.history.replaceState({}, document.title, '/')
+  }
+
+  // -------------------------------------
+  // Geolocation & Turf Mask
+  // -------------------------------------
   navigator.geolocation.getCurrentPosition(
     async pos => {
       userLat.value = pos.coords.latitude
       userLon.value = pos.coords.longitude
       localStorage.setItem('userLat', userLat.value)
       localStorage.setItem('userLon', userLon.value)
-      
-      
-isAutoDetected.value = true
-  const lat = parseFloat(localStorage.getItem('userLat'))
-  const lon = parseFloat(localStorage.getItem('userLon'))
+      isAutoDetected.value = true
 
-      // Marker „Your Location“
+      const lat = parseFloat(localStorage.getItem('userLat'))
+      const lon = parseFloat(localStorage.getItem('userLon'))
+
+      // 📍 Your location marker again (second copy but intentional)
       L.marker([userLat.value, userLon.value])
         .addTo(mapInstance)
         .bindPopup('📍 Your Location')
         .openPopup()
 
-        
-    // 1. Innerer weißer Kreis
-    const whiteCircle = L.circle([lat, lon], {
-      radius: 5000,
-      color: 'black',
-      fillColor: 'transparent',
-      fillOpacity: 1,
-      weight: 2
-    }).addTo(mapInstance)
+      // Inner circle (5km)
+      const whiteCircle = L.circle([lat, lon], {
+        radius: 5000,
+        color: 'black',
+        fillColor: 'transparent',
+        fillOpacity: 1,
+        weight: 2
+      }).addTo(mapInstance)
 
-    // 2. Welt-Polygon mit Loch (graue Fläche außen)
-const world = turf.polygon([
-  [
-    [-180, -90],
-    [180, -90],
-    [180, 90],
-    [-180, 90],
-    [-180, -90]
-  ]
-])
+      // World polygon
+      const world = turf.polygon([
+        [[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]]
+      ])
 
+      // Hole around user location
+      const hole = turf.circle([lon, lat], 5, {
+        steps: 64,
+        units: 'kilometers'
+      })
 
-      //Kreis um den Nutzerstandort als "Loch" definieren (5 km Radius)
-const hole = turf.circle([lon, lat], 5, {
-  steps: 64,  // Auflösung des Kreises
-  units: 'kilometers'
-})
+      // Handle MultiPolygon case
+      let holePoly = hole
+      if (hole.geometry.type === 'MultiPolygon') {
+        const firstPoly = hole.geometry.coordinates[0]
+        holePoly = turf.polygon(firstPoly, hole.properties)
+      }
 
-// Falls das ein MultiPolygon ist → in Polygon umwandelns
-let holePoly = hole
-if (hole.geometry.type === 'MultiPolygon') {
-  const firstPoly = hole.geometry.coordinates[0]
-  holePoly = turf.polygon(firstPoly, hole.properties)
-}
+      // Apply mask
+      const masked = turf.mask(world, holePoly)
+      L.geoJSON(masked, {
+        style: {
+          color: '#888',
+          weight: 0,
+          fillColor: '#ddd',
+          fillOpacity: 0.5
+        }
+      }).addTo(mapInstance)
 
-// Maske erstellen: Alles außerhalb des 5-km-Kreises ausgrauen
-const masked = turf.mask(world, holePoly)
-
- //Graue Maske zur Karte hinzufügen
-        L.geoJSON(masked, {
-          style: {
-            color: '#888',        //randfarbe
-            weight: 0,            //kein rand
-            fillColor: '#ddd',    //hellgrau
-            fillOpacity: 0.5      // 0 = komplett transparent, 1 = undurchsichtig
-          }
-        }).addTo(mapInstance)
-    
-    
-      // ---------------------------------
-      // 2)   Nur Bottles im 5-km-Umkreis:
-      // ---------------------------------
-      await loadNearbyBottles()        
+      // Nearby bottles only
+      await loadNearbyBottles()
     },
     err => console.warn('Geolocation-Error', err),
     { enableHighAccuracy: true, timeout: 10000 }
   )
 })
+
+
+onMounted(() => {
+  const update = () => {
+    isMobile.value = window.innerWidth <= 768
+  }
+
+  update()
+  window.addEventListener('resize', update)
+})
+
+watch(isMobile, async () => {
+  await nextTick()
+
+  // Delay to make sure DOM is updated
+  setTimeout(() => {
+    const el = document.getElementById('map')
+    if (mapInstance && el?.offsetHeight > 0) {
+      console.log('✅ Forcing Leaflet resize')
+      mapInstance.invalidateSize()
+    } else {
+      console.warn('❌ Map not visible or not initialized yet')
+    }
+  }, 300)
+})
+
 
 
 
@@ -553,60 +970,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 })
 
-onMounted(async () => {
-
-  await nextTick()
-  const mapContainer = document.getElementById('map')
-  if (!mapContainer) {
-    console.error('❌ Map container not found!')
-    return
-  }
-
-  if (!mapInstance) {
-    mapInstance = L.map(mapContainer).setView([48.1351, 11.5820], 13)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(mapInstance)
-    map.value = mapInstance
-  } else {
-    console.warn('⚠️ Map is already initialized')
-  }
-
-
-  await loadBottles()
-  // 📍 Standort aus localStorage holen
-  const savedLat = localStorage.getItem('userLat')
-  const savedLon = localStorage.getItem('userLon')
-
-
-  if (savedLat && savedLon) {
-    const lat = parseFloat(savedLat)
-    const lon = parseFloat(savedLon)
-    // Marker und Zoom setzen
-    const marker = L.marker([lat, lon])
-      .addTo(mapInstance)
-      .bindPopup('📍 Your Location')
-      .openPopup()
-
-    mapInstance.setView([lat, lon], 13)
-  }
-
-  const query = new URLSearchParams(window.location.search)
-  const queryLat = query.get('lat')
-  const queryLon = query.get('lon')
-  const msg = query.get('msg')
-  const storedCoords = localStorage.getItem('coords' || '{}')
-
-  if (queryLat && queryLon && msg) {
-    const marker = L.marker([parseFloat(queryLat), parseFloat(queryLon)])
-      .addTo(map.value)
-      .bindPopup(`<strong>📦 New Bottle:</strong><br/>${msg}`)
-      .openPopup()
-
-    mapInstance.setView([parseFloat(queryLat), parseFloat(queryLon)], 14)
-    window.history.replaceState({}, document.title, '/')
-  }
-})
 
 
 
@@ -662,18 +1025,18 @@ window.replyToBottle = (bottleId) => {
   if (!bottle) return alert('Bottle not found')
 
   selectedAllBottle.value = bottle
-allDetailVisible.value = true
-showReplyInput.value = false
+  allDetailVisible.value = true
+  showReplyInput.value = false
 
 }
-  //if (bottle) {
-    //viewBottleDetail(bottle)              // zeigt das Detailfenster
-    //toggleReplyBox(bottleId)              // öffnet das Reply-Feld
-  //} else {
-    //alert('Bottle not found')
-     //viewBottleDetail(bottle)            // öffnet das Modal
-  //nextTick(() => toggleReplyBox(bottleId)) // jetzt erst Eingabefeld
-  //}
+//if (bottle) {
+//viewBottleDetail(bottle)              // zeigt das Detailfenster
+//toggleReplyBox(bottleId)              // öffnet das Reply-Feld
+//} else {
+//alert('Bottle not found')
+//viewBottleDetail(bottle)            // öffnet das Modal
+//nextTick(() => toggleReplyBox(bottleId)) // jetzt erst Eingabefeld
+//}
 //}
 
 window.tryOpen = id => {
@@ -711,6 +1074,14 @@ function goToMapReply() {
 </script>
 
 <style scoped>
+html,
+body,
+#app {
+  margin: 0;
+  padding: 0;
+  height: 100dvh;
+}
+
 .grid-container {
   display: grid;
   grid-template-columns: 1fr 100px;
@@ -718,31 +1089,105 @@ function goToMapReply() {
   width: 100vw;
 }
 
-.map-container {
-  height: 100%;
+#map {
+  flex: 1;
   width: 100%;
+  height: calc(100dvh - 60px);
+  display: block;
+  z-index: 0;
+}
+
+.map-container {
+  height: 100vh !important;
+  width: 100% !important;
+  position: relative;
+  z-index: 0;
+}
+
+.mobile-layout {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  height: 100dvh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.map-area {
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.mobile-button {
+  flex: 1;
+  height: 100%;
+  border: none;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.mobile-button-bar {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  background-color: white;
+  height: 60px;
+  width: 100%;
+  z-index: 10;
+}
+
+.mobile-button .icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+
+.mobile-button-bar button {
+  flex: 1;
+  padding: 6px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  /* text-xs */
+  gap: 2px;
+  border: none;
+  background: white;
+}
+
+.mobile-button-bar svg {
+  width: 1.5rem;
+  /* Tailwind w-6 */
+  height: 1.5rem;
+  /* Tailwind h-6 */
 }
 
 .sidebar {
   background-color: #b8bcc2;
-  color: rgb(245, 239, 239);
+  color: rgb(255, 255, 255);
   padding: 2rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
+
 .function-button {
   flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
-  flex-direction: column; 
+  flex-direction: column;
 }
 
 .btn-action {
   width: 50px;
   height: 50px;
-  border-radius: 9999px; 
+  border-radius: 9999px;
   background-color: #c4c2d8;
   display: flex;
   align-items: center;
@@ -765,7 +1210,7 @@ function goToMapReply() {
 .flex-icon-group {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem; 
+  gap: 1.5rem;
   align-items: center;
 }
 
@@ -805,12 +1250,12 @@ form-modal {
   overflow: hidden;
   color: black;
   display: flex;
-  flex-direction: column; 
+  flex-direction: column;
 }
 
 .form-header {
   height: 5%;
-  background-color: #ddd;  
+  background-color: #ddd;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -825,7 +1270,7 @@ form-modal {
   height: 95%;
   display: flex;
   flex-direction: row;
-  
+
 }
 
 .mybottle-content {
@@ -833,6 +1278,23 @@ form-modal {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .grid-container {
+    display: flex !important;
+    flex-direction: column;
+    height: 100dvh;
+  }
+
+  .map-container {
+    height: 100%;
+    flex: 1;
+  }
+
+  .sidebar {
+    display: none !important;
+  }
 }
 
 .form-left {
@@ -869,7 +1331,7 @@ form-modal {
 
 .form-right-reply {
   display: flex;
-   height: 100px; 
+  height: 100px;
   border-top: 1px solid #ddd;
   padding: 1rem;
 }
@@ -1174,15 +1636,16 @@ h3 {
 }
 
 .chat-preview {
-  font-size: 0.875rem;     
-  color: #000000;          
+  font-size: 0.875rem;
+  color: #000000;
   text-align: left;
 }
+
 .chat-info-wrapper {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.75rem; 
+  font-size: 0.75rem;
   color: rgb(255, 255, 255);
   text-align: left;
 }
@@ -1198,19 +1661,21 @@ h3 {
 
 .chat-button {
   width: 90%;
-  margin: 0 auto 1rem auto; 
+  margin: 0 auto 1rem auto;
   padding: 1rem;
   background-color: white;
   border-radius: 0.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   cursor: pointer;
-  text-align: left;  
+  text-align: left;
 }
-.chat-info{
- 
+
+.chat-info {
+
   background-color: white;
- 
+
 }
+
 .chat-message {
   display: flex;
   margin-bottom: 0.75rem;
@@ -1246,10 +1711,12 @@ h3 {
   color: black;
   border-bottom-left-radius: 0;
 }
-.bottle-details{
+
+.bottle-details {
   text-align: center;
 }
-.icon{
+
+.icon {
   text-align: center;
 }
 </style>
