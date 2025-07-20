@@ -1,7 +1,7 @@
 // replyLogic.js
 import { ref, nextTick, unref } from 'vue'
 import axios from 'axios'
-import { currentBottleSenderId, currentBottleId, messageList } from './chatLogic'
+import { currentBottleSenderId, currentBottleId, messageList, selectedConversation, chatList, loadChatList } from './chatLogic'
 import { toRaw } from 'vue'
 import { closeDetailModal as closeAllDetailModal } from './allBottlesLogic'
 //import { showReplySuccessModal } from './throwBottleLogic'
@@ -35,33 +35,46 @@ export function cancelReply({ keepBottle = false } = {}) {
 }
 
 
+function moveConversationToTop(conversationId, content) {
+  
+    console.log('🧪 selectedConversation:', conversationId)
+console.log('📋 chatList:', chatList.value.map(c => c.conversation_id))
+  const index = chatList.value.findIndex(c => c.conversation_id === conversationId)
+  if (index !== -1) {
+    const convo = chatList.value.splice(index, 1)[0]
+
+    // Letzte Nachricht aktualisieren
+    convo.last_message = {
+      sender_id: userId,
+      content: content,
+      timestamp: new Date().toISOString()
+    }
+
+    console.log('🔝 Conversation moved to top:', convo)
+    chatList.value.unshift(convo)
+
+  }
+}
+
 
 //reply for bottle
 export async function sendReply(selectedAllBottle) {
   console.log('Sending reply:', replyContent.value)
 console.log('selectedAllBottle:', selectedAllBottle)
 console.log('selectedAllBottle keys:', Object.keys(toRaw(selectedAllBottle)))
-
-
   if (!selectedAllBottle ) {
     console.error('❌ Missing required selectedAllBottle fields')
     return
-    
   }
     if (!selectedAllBottle.sender_id) {
     console.error('❌ Missing sender_id in selectedAllBottle')
     return
   }
-
-
   if (!replyContent.value ) {
     console.error('❌ Missing required reply fields')
     return
   }
-
-
   try {
-
     const response = await axios.post('http://localhost:8000/reply', {
 
       bottle_id: selectedAllBottle.bottle_id,
@@ -72,17 +85,31 @@ console.log('selectedAllBottle keys:', Object.keys(toRaw(selectedAllBottle)))
     })
 
     console.log('✅ Reply sent:', response.data)
- 
-
     cancelReply()
      await nextTick()
-
     closeAllDetailModal()   
      await nextTick()
-
     showReplySuccessModal.value = true
     console.log('✅ Setting showReplySuccessModal to TRUE now!')  
+    await loadChatList()
     await nextTick() 
+    // 🔍 Suche passende Konversation (falls vorhanden)
+    const matchingConversation = chatList.value.find(c =>
+      c.bottle_id === selectedAllBottle.bottle_id &&
+      c.participants.includes(userId) &&
+      c.participants.includes(selectedAllBottle.sender_id)
+    )
+
+    if (matchingConversation) {
+      moveConversationToTop(matchingConversation.conversation_id, replyContent.value)
+
+      // (Optional) Direkt öffnen:
+      selectedConversation.value = matchingConversation.conversation_id
+      // showChatModal.value = true
+      // showChatDetailModal.value = true
+    } else {
+      console.warn('⚠️ No matching conversation found to move')
+    }
   } catch (err) {
     console.error('❌ Reply failed:', err)
     alert('Failed to send reply.')
@@ -114,6 +141,7 @@ export async function scrollToBottom(refElement, maxRetries = 10) {
 
 //reply for chat 
 export async function sendReply2(chatMessages) {
+    console.log('🟡 sendReply2 called')
  console.log('🧪 currentBottleId in replyLogic:', currentBottleId)
 console.log('🧪 currentBottleId.value in replyLogic:', currentBottleId.value)
 
@@ -173,6 +201,7 @@ if (el) {
 
 await scrollToBottom(chatMessages)
 cancelReply({ keepBottle: true })
+moveConversationToTop(selectedConversation.value, content)
 
   } catch (err) {
     console.error('❌ Reply failed:', err)

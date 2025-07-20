@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import axios from 'axios'
-import { fetchMyBottles } from './myBottlesLogic.js'
+import { fetchMyBottles, myBottles } from './myBottlesLogic.js'
 
 export const showForm = ref(false)
 export const bottleContent = ref('')
@@ -34,7 +34,7 @@ export function showThrowBottleForm() {
       localStorage.setItem('userLat', pos.coords.latitude)
       localStorage.setItem('userLon', pos.coords.longitude)
       reverseGeocode(pos.coords.latitude, pos.coords.longitude)
-      loadNearbyBottles()
+      loadBottles()
     },
     () => {
       // Fallback auf gespeicherte Werte
@@ -83,11 +83,15 @@ export function addTag() {
     tagList.value.length < 5 // max tags
   ) {
     tagList.value.push(value)
+    console.log('✅ Tag added:', value)
+    } else {
+    console.warn('⚠️ Tag NOT added. Value:', value)
   }
   tagInput.value = ''
 }
 
 export function handleTagKeydown(e) {
+  console.log('🧪 key pressed:', e.key)
   const key = e.key
   if (
     (key === 'Enter' || key === ' ' || key === 'Space' || key === ',' || key === 'Comma') &&
@@ -114,16 +118,11 @@ const storedCoords = localStorage.getItem('coords')
 localStorage.setItem('lastBottleLat', storedLat)
 localStorage.setItem('lastBottleLon', storedLon)
 
-
-
-
   if (!bottleContent.value || !location.value) {
     console.warn('no locations')
     
     return
   }
-
-
 
   try {
     const res = await axios.post(`${API_BASE}/add_bottle`, {
@@ -139,25 +138,14 @@ localStorage.setItem('lastBottleLon', storedLon)
       }
       : JSON.parse(storedCoords),
 city: city.value,
-  max_readers: maxReaders.value ? parseInt(maxReaders.value) : null,
-
-
- 
+  max_readers: maxReaders.value ? parseInt(maxReaders.value) : null, 
       })
-
-
-
     console.log('✅ Server response:', res.data)
-
 
 if (res.data.status === 'texterror') {
     alert('❌ Text error: ' + res.data.message);
     return;
   }
-
-
-
-
 
     // refresh form
     showForm.value = false
@@ -171,7 +159,7 @@ if (res.data.status === 'texterror') {
       await refreshNearby()
     }
        await fetchMyBottles() 
-
+console.log('🧪 Updated myBottles:', myBottles.value)
     return res.data
   } catch (err) {
     console.error('❌ Submit failed:', err)

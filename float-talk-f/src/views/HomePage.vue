@@ -64,7 +64,8 @@
             <div class="chat-info-wrapper">
               <p class="dialog-tags">
                 <CalendarFold class="w-4 h-4" />
-                {{  formatDate(bottle.timestamp)}} 
+               <!--{{  formatDate(bottle.timestamp)}} -->
+                 {{ new Date(new Date(bottle.timestamp).getTime() + 2*60*60*1000).toLocaleString() }}
               </p>
 
                <div class="dialog-tags" >
@@ -128,7 +129,7 @@
           <div class="modal">
             <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
             <p class="mb-4">Your message has been thrown and saved on the map.</p>
-            <button @click="goToMap" class="btn-action">Go back to map</button>
+            <button @click="goToMap" class="btn-submit w-full max-w-xs">Go back to map</button>
           </div>
         </div>
 
@@ -266,7 +267,7 @@
         <div class="modal">
           <h2 class="text-lg font-semibold mb-4">📦 Reply sent successfully!</h2>
           <p class="mb-4">Your reply was saved.</p>
-          <button @click="goToMapReply" class="btn-action">Go back to map</button>
+          <button @click="goToMapReply" class="btn-submit w-full max-w-xs">Go back to map</button>
         </div>
       </div>
 
@@ -331,6 +332,19 @@ import { ttlMinutes } from './throwBottleLogic.js'
 import * as turf from '@turf/turf'
 import bottleIconUrl from '../assets/leaflet/bottle.png'
 
+
+
+
+function handleSendReply() {
+  
+   console.log('▶️ handleSendReply aufgerufen')
+   sendReply2(chatMessagesRef).then(() => {
+    loadNearbyBottles() 
+       loadChatList()
+   })
+}
+
+console.log('🟢 handleSendReply ist sichtbar:', typeof handleSendReply)
 
 const bottleIcon = L.icon({
   iconUrl: bottleIconUrl,
@@ -649,11 +663,24 @@ watch(
       const loc = b.location || {}
       if (!('lat' in loc && 'lon' in loc)) return
 
-      const marker = L.marker([loc.lat, loc.lon], { icon: bottleIcon }).addTo(mapInstance)
+      /*const marker = L.marker([loc.lat, loc.lon], { icon: bottleIcon }).addTo(mapInstance)
         .bindPopup(`
   <small>Tags: ${(b.tags || []).join(', ')}</small><br/>
   <button onclick="window.replyToBottle('${b.bottle_id}')">💬 Reply</button>
-`)
+`)*/
+
+const tagsDisplay = (b.tags && b.tags.length > 0)
+  ? `<small>Tags: ${b.tags.join(', ')}</small>`
+  : `<small class="text-gray-400">No tags</small>`
+
+const marker = L.marker([loc.lat, loc.lon], { icon: bottleIcon }).addTo(mapInstance)
+  .bindPopup(`
+    <div style="max-width: 200px; font-size: 14px;">
+      ${tagsDisplay}
+      <br/>
+      <button onclick="window.replyToBottle('${b.bottle_id}')" style="margin-top: 6px; padding: 4px 8px; font-size: 13px; border-radius: 4px; background: #eee; border: 1px solid #ccc;">💬 Reply</button>
+    </div>
+  `)
 
 
       allBottleMarkers.push(marker)
@@ -689,6 +716,7 @@ window.tryOpen = id => {
 }
 
 async function loadNearbyBottles() {
+  console.log('📡 fetching nearby bottles...')
   if (userLat.value == null || userLon.value == null) return
   const res = await axios.get(
     `${API_BASE}/nearby_bottles`,
@@ -723,9 +751,6 @@ onMounted(() => {
 })
 
 
-function handleSendReply() {
-  sendReply2(chatMessagesRef)
-}
 
 </script>
 
@@ -818,7 +843,7 @@ form-modal {
   border-radius: 1rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   width: 90%;
-  height: 70%;
+  height: 80%;
   max-width: 1000px;
   max-height: 850px;
   overflow: hidden;

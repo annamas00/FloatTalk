@@ -7,29 +7,16 @@ export const currentBottleSenderId = ref(null)
 export const currentBottleId = ref(null)
 //export const messageList = ref(null)
 export const messageList = ref([])
+export const chatList = ref([])
+export const selectedConversation = ref(null)
+export const userId = localStorage.getItem('user_id')
 
 
-
-
-
-export function useChatLogic(chatMessagesRef) {
-  const showChatModal = ref(false)
-  const showChatDetailModal = ref(false)
-
-  const chatList = ref([])
-  const selectedConversation = ref(null)
-  //const messageList = ref([])
-  //const currentBottleId = ref(null) 
-  const userId = localStorage.getItem('user_id')
-
- 
-
-    const loadChatList = async () => {
+export async function loadChatList() {
   try {
     const res = await axios.get(`http://localhost:8000/conversations/user/${userId}`)
     chatList.value = res.data || []
 
-    
     for (let convo of chatList.value) {
       convo.first_message = convo.first_message || {
         sender_id: null,
@@ -38,16 +25,21 @@ export function useChatLogic(chatMessagesRef) {
       }
     }
 
- console.log('userid:', userId)
-
-
-
+    console.log('✅ chatList loaded')
   } catch (err) {
     console.error('❌ Failed to load chat list:', err)
   }
 }
 
 
+export function useChatLogic(chatMessagesRef) {
+  const showChatModal = ref(false)
+  const showChatDetailModal = ref(false)
+
+  //const chatList = ref([])
+  //const selectedConversation = ref(null)
+  //const messageList = ref([])
+  //const currentBottleId = ref(null) 
 
   const openConversation = async (conversationId) => {
     selectedConversation.value = conversationId
