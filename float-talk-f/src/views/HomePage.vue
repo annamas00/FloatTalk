@@ -169,129 +169,155 @@
                   </p>
 
                 </button>
-                <!-- .form-right -->
-                <div class="form-right" v-if="showChatDetailModal">
-                  
-                  <div class="form-right-header">
-
-                    <Handshake class="w-5 h-5" />
-
-                  </div>
-
-                  <div class="form-right-content">
-
-                    <div v-for="msg in messageList" :key="msg.timestamp" :class="[
-                      'chat-message',
-                      msg.sender_id === userId ? 'self-message' : 'other-message'
-                    ]">
-                      <div class="chat-bubble">
-                        <p class="text-xs text-gray-500 mb-1">{{ formatDate(msg.timestamp) }}</p>
-                        <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
-                      </div>
-                    </div>
-
-
-                  </div>
-
-                  <div class="form-right-reply">
-                    <div class="form-right-reply-blank">
-                      <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
-                    </div>
-                    <div class="form-right-reply-button">
-                      <button class="btn-submit" @click="handleSendReply">Send</button>
-                    </div>
-                  </div>
-                </div>
-
-
-              </div>
-            </div>
-          </div>
-
-
-          <!-- All Bottle Detail Modal -->
-          <div v-if="allDetailVisible" class="dialog-overlay">
-            <div class="dialog-box text-black">
-              <div class="dialog-header">
-                <h2 class="dialog-title">📦 Bottle Detail</h2>
-                <button class="dialog-close" @click="closeAllDetailModal">×</button>
               </div>
 
-              <div class="dialog-body">
-                <p class="dialog-content">{{ selectedAllBottle?.content }}</p>
-                <div class="dialog-tags" v-if="selectedAllBottle?.tags">
-                  <span v-for="(tag, idx) in selectedAllBottle.tags" :key="idx" class="tag-chip">
-                    {{ tag }}
-                  </span>
+              <!-- .form-right -->
+              <div class="form-right" v-if="showChatDetailModal">
+
+                <div class="form-right-header">
+
+                  <Handshake class="w-5 h-5" />
+
                 </div>
 
-                <!-- Reply Button -->
-                <div class="dialog-reply mt-4">
-                  <div v-if="!showReplyInput" class="flex justify-end">
-                    <button class="btn-submit" @click="toggleReplyBox(selectedAllBottle?.bottle_id)">Reply</button>
+                <div class="form-right-content">
+
+                  <div v-for="msg in messageList" :key="msg.timestamp" :class="[
+                    'chat-message',
+                    msg.sender_id === userId ? 'self-message' : 'other-message'
+                  ]">
+                    <div class="chat-bubble">
+                      <p class="text-xs text-gray-500 mb-1">{{ formatDate(msg.timestamp) }}</p>
+                      <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
+                    </div>
                   </div>
-                  <div v-else>
+
+
+                </div>
+
+                <div class="form-right-reply">
+                  <div class="form-right-reply-blank">
                     <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
-                    <div class="flex justify-end mt-2 space-x-2">
-                      <button class="btn-cancel" @click="cancelReply">Cancel</button>
-                      <button class="btn-submit" @click="sendReply(selectedAllBottle)">Send</button>
-                    </div>
                   </div>
-                  <div v-if="showSuccessModal" class="modal-overlay">
-                    <div class="modal">
-                      <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
-                      <p class="mb-4">Your message has been thrown and saved on the map.</p>
-                      <button @click="goToMap" class="btn-action">Back</button>
-                    </div>
+                  <div class="form-right-reply-button">
+                    <button class="btn-submit" @click="handleSendReply">Send</button>
+                  </div>
+                </div>
+              </div>
+
+
+            </div>
+          </div>
+        </div>
+
+
+        <!-- All Bottles dropdown -->
+        <!--  <div class="w-full mt-4">
+          <button @click="toggleAllDropdown" class="btn-action w-full flex justify-between items-center">
+            <span>All Bottles</span>
+            <span>{{ allDropdownOpen ? '▲' : '▼' }}</span>
+          </button>
+
+          <div v-if="allDropdownOpen" class="dropdown-list">
+            <div v-for="(bottle, index) in allBottles" :key="index" class="dropdown-item" @click="showBottle(bottle)">
+              {{ bottle && bottle.content ? bottle.content.slice(0, 20) : '[No Content]' }}
+            </div>
+          </div>
+        </div> -->
+
+        <!-- All Bottle Detail Modal -->
+        <div v-if="allDetailVisible" class="dialog-overlay">
+          <div class="dialog-box text-black">
+            <div class="dialog-header">
+              <h2 class="dialog-title">📦 Bottle Detail</h2>
+              <button class="dialog-close" @click="closeAllDetailModal">×</button>
+            </div>
+
+            <div class="dialog-body">
+              <p class="dialog-content">{{ selectedAllBottle?.content }}</p>
+              <div class="dialog-tags" v-if="selectedAllBottle?.tags">
+                <span v-for="(tag, idx) in selectedAllBottle.tags" :key="idx" class="tag-chip">
+                  {{ tag }}
+                </span>
+              </div>
+
+              <!-- Reply Button -->
+              <div class="dialog-reply mt-4">
+                <div v-if="!showReplyInput" class="flex justify-end">
+                  <button class="btn-submit" @click="toggleReplyBox(selectedAllBottle?.bottle_id)">Reply</button>
+                </div>
+                <div v-else>
+                  <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
+                  <div class="flex justify-end mt-2 space-x-2">
+                    <button class="btn-cancel" @click="cancelReply">Cancel</button>
+                    <button class="btn-submit" @click="sendReply(selectedAllBottle)">Send</button>
+                  </div>
+                </div>
+                <div v-if="showSuccessModal" class="modal-overlay">
+                  <div class="modal">
+                    <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
+                    <p class="mb-4">Your message has been thrown and saved on the map.</p>
+                    <button @click="goToMap" class="btn-action">Back</button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <div v-if="showReplySuccessModal" class="modal-overlay">
-            <div class="modal">
-              <h2 class="text-lg font-semibold mb-4">📦 Reply sent successfully!</h2>
-              <p class="mb-4">Your reply was saved.</p>
-              <button @click="goToMap" class="btn-submit w-full max-w-xs">Go back to map</button>
+        </div>
+        <div v-if="showReplySuccessModal" class="modal-overlay">
+          <div class="modal">
+            <h2 class="text-lg font-semibold mb-4">📦 Reply sent successfully!</h2>
+            <p class="mb-4">Your reply was saved.</p>
+            <button @click="goToMap" class="btn-submit w-full max-w-xs">Go back to map</button>
+          </div>
+        </div>
+
+        <!-- check my bottle -->
+        <div v-if="detailVisible" class="dialog-overlay">
+          <div class="dialog-box">
+            <div class="dialog-header">
+              <h2 class="dialog-title">📩 Bottle Detail</h2>
+              <button class="dialog-close" @click="closeDetailModal">×</button>
+            </div>
+            <div class="dialog-body">
+              <p class="dialog-content">
+                {{ selectedBottle && selectedBottle.content }}
+              </p>
+
+              <div class="dialog-tags" v-if="selectedBottle && selectedBottle.tags">
+                <span v-for="(tag, idx) in selectedBottle.tags" :key="idx" class="tag-chip">
+                  {{ tag }}
+                </span>
+              </div>
             </div>
           </div>
+        </div>
 
-          <!-- check my bottle -->
-          <div v-if="detailVisible" class="dialog-overlay">
-            <div class="dialog-box">
-              <div class="dialog-header">
-                <h2 class="dialog-title">📩 Bottle Detail</h2>
-                <button class="dialog-close" @click="closeDetailModal">×</button>
-              </div>
-              <div class="dialog-body">
-                <p class="dialog-content">
-                  {{ selectedBottle && selectedBottle.content }}
-                </p>
+        <!-- Dropdown toggle button -->
 
-                <div class="dialog-tags" v-if="selectedBottle && selectedBottle.tags">
-                  <span v-for="(tag, idx) in selectedBottle.tags" :key="idx" class="tag-chip">
-                    {{ tag }}
-                  </span>
-                </div>
-              </div>
+        <!--   <div class="w-full mt-4">
+          <button @click="toggleDropdown" class="btn-action w-full flex justify-between items-center">
+            <span>my Bottles</span>
+            <span>{{ dropdownOpen ? '▲' : '▼' }}</span>
+          </button>
+
+          <div v-if="dropdownOpen" class="dropdown-list">
+            <div v-for="(bottle, index) in myBottles" :key="index" class="dropdown-item"
+              @click="viewBottleDetail(bottle)">
+              {{ bottle.content.slice(0, 20) }}...
             </div>
           </div>
+        </div> -->
 
 
-        </div>
-        <div class="icon">
-          <Waves class="w-5 h-5" />
-          Float
-          Talk
-        </div>
+      </div>
+      <div class="icon">
+        <Waves class="w-5 h-5" />
+        Float
+        Talk
       </div>
     </div>
   </div>
-
-
-
-
-<!--Mobile Version -->
   <div v-if="isMobile" class="mobile-layout">
     <div id="map" class="map-area"></div>
     <div class="mobile-button-bar">
@@ -1008,12 +1034,12 @@ watch(
   <button onclick="window.replyToBottle('${b.bottle_id}')">💬 Reply</button>
 `)*/
 
-const tagsDisplay = (b.tags && b.tags.length > 0)
-  ? `<small>Tags: ${b.tags.join(', ')}</small>`
-  : `<small class="text-gray-400">No tags</small>`
+      const tagsDisplay = (b.tags && b.tags.length > 0)
+        ? `<small>Tags: ${b.tags.join(', ')}</small>`
+        : `<small class="text-gray-400">No tags</small>`
 
-const marker = L.marker([loc.lat, loc.lon], { icon: bottleIcon }).addTo(mapInstance)
-  .bindPopup(`
+      const marker = L.marker([loc.lat, loc.lon], { icon: bottleIcon }).addTo(mapInstance)
+        .bindPopup(`
     <div style="max-width: 200px; font-size: 14px;">
       ${tagsDisplay}
       <br/>
