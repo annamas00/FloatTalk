@@ -65,7 +65,7 @@
                 <div class="chat-info-wrapper">
                   <p class="dialog-tags">
                     <CalendarFold class="w-4 h-4" />
-                    {{ formatDate(bottle.timestamp) }}
+                    {{ new Date(new Date(bottle.timestamp).getTime() + 2*60*60*1000).toLocaleString() }}
                   </p>
 
                   <div class="dialog-tags">
@@ -159,8 +159,7 @@
                   <div class="chat-info-wrapper">
                     <p v-if="chat.first_message" class="chat-info-text">
                       {{chat.participants.map(p => p.nickname).join(', ')}}<br>
-                      {{ formatDate(chat.first_message.timestamp
-                      ) }}
+                      {{ new Date(new Date(bottle.timestamp).getTime() + 2*60*60*1000).toLocaleString() }}
                     </p>
                   </div>
                   <p class="chat-preview">
@@ -267,8 +266,7 @@
           <div class="modal">
             <h2 class="text-lg font-semibold mb-4">📦 Reply sent successfully!</h2>
             <p class="mb-4">Your reply was saved.</p>
-            <button @click="goToMapReply" class="btn-action">Go back to map</button>
-          </div>
+            <button @click="goToMap" class="btn-submit w-full max-w-xs">Go back to map</button>          </div>
         </div>
 
         <!-- check my bottle -->
@@ -532,7 +530,7 @@
           <div class="modal">
             <h2 class="text-lg font-semibold mb-4">📦 Reply sent successfully!</h2>
             <p class="mb-4">Your reply was saved.</p>
-            <button @click="goToMapReply" class="btn-action">Go back to map</button>
+            <button @click="goToMapReply" class="btn-submit w-full max-w-xs">Go back to map</button>
           </div>
         </div>
         <div v-if="detailVisible" class="dialog-overlay">
