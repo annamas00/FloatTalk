@@ -1,12 +1,10 @@
+<!--Website Version-->
 <template>
   <div v-if="!isMobile" class="grid-container">
     <div class="map-container" id="map"></div>
 
     <div class="sidebar">
       <!-- link sidebar -->
-
-
-
 
       <div class="function-button">
         <div class="flex-icon-group">
@@ -173,7 +171,7 @@
                 </button>
                 <!-- .form-right -->
                 <div class="form-right" v-if="showChatDetailModal">
-
+                  
                   <div class="form-right-header">
 
                     <Handshake class="w-5 h-5" />
@@ -210,20 +208,6 @@
             </div>
           </div>
 
-
-          <!-- All Bottles dropdown -->
-          <!--  <div class="w-full mt-4">
-          <button @click="toggleAllDropdown" class="btn-action w-full flex justify-between items-center">
-            <span>All Bottles</span>
-            <span>{{ allDropdownOpen ? '▲' : '▼' }}</span>
-          </button>
-
-          <div v-if="allDropdownOpen" class="dropdown-list">
-            <div v-for="(bottle, index) in allBottles" :key="index" class="dropdown-item" @click="showBottle(bottle)">
-              {{ bottle && bottle.content ? bottle.content.slice(0, 20) : '[No Content]' }}
-            </div>
-          </div>
-        </div> -->
 
           <!-- All Bottle Detail Modal -->
           <div v-if="allDetailVisible" class="dialog-overlay">
@@ -293,22 +277,6 @@
             </div>
           </div>
 
-          <!-- Dropdown toggle button -->
-
-          <!--   <div class="w-full mt-4">
-          <button @click="toggleDropdown" class="btn-action w-full flex justify-between items-center">
-            <span>my Bottles</span>
-            <span>{{ dropdownOpen ? '▲' : '▼' }}</span>
-          </button>
-
-          <div v-if="dropdownOpen" class="dropdown-list">
-            <div v-for="(bottle, index) in myBottles" :key="index" class="dropdown-item"
-              @click="viewBottleDetail(bottle)">
-              {{ bottle.content.slice(0, 20) }}...
-            </div>
-          </div>
-        </div> -->
-
 
         </div>
         <div class="icon">
@@ -319,6 +287,11 @@
       </div>
     </div>
   </div>
+
+
+
+
+<!--Mobile Version -->
   <div v-if="isMobile" class="mobile-layout">
     <div id="map" class="map-area"></div>
     <div class="mobile-button-bar">
@@ -355,7 +328,7 @@
             <div class="chat-info-wrapper">
               <p class="dialog-tags">
                 <CalendarFold class="w-4 h-4" />
-                {{ formatDate(bottle.timestamp) }}
+               {{ new Date(new Date(bottle.timestamp).getTime() + 2 * 60 * 60 * 1000).toLocaleString() }}
               </p>
 
               <div class="dialog-tags">
@@ -416,7 +389,7 @@
       <div class="modal">
         <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
         <p class="mb-4">Your message has been thrown and saved on the map.</p>
-        <button @click="goToMap" class="btn-action">Go back to map</button>
+        <button @click="goToMap" class="btn-submit w-full max-w-xs">Go back to map</button>
       </div>
     </div>
     <div v-if="showChatModal" class="form-modal">
@@ -658,7 +631,7 @@
                 <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
               </div>
               <div class="form-right-reply-button">
-                <button class="btn-submit" @click="sendReply2">Send</button>
+                <button class="btn-submit" @click="handleSendReply">Send</button>
               </div>
             </div>
           </div>
@@ -708,8 +681,7 @@ const API_BASE =
 
 
 const isAutoDetected = ref(false)
-
-const visibilityKm = ref(5)          // required
+const visibilityKm = ref(5)          
 const maxReaders = ref(null)
 const showMyBottleModal = ref(false)
 const chatMessagesRef = ref(null)
