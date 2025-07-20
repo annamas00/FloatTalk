@@ -75,9 +75,9 @@
 
               </div>
             </div>
-             <p class="dialog-content">
+            <div class="dialog-content">
             <p class="bottle-details">{{ bottle.content.slice(0, 30) }}</p>
-         </p>
+            </div>
         </div>
       
     </div>
