@@ -1030,11 +1030,24 @@ watch(
       const loc = b.location || {}
       if (!('lat' in loc && 'lon' in loc)) return
 
-      const marker = L.marker([loc.lat, loc.lon]).addTo(mapInstance)
+      /*const marker = L.marker([loc.lat, loc.lon], { icon: bottleIcon }).addTo(mapInstance)
         .bindPopup(`
   <small>Tags: ${(b.tags || []).join(', ')}</small><br/>
   <button onclick="window.replyToBottle('${b.bottle_id}')">💬 Reply</button>
-`)
+`)*/
+
+const tagsDisplay = (b.tags && b.tags.length > 0)
+  ? `<small>Tags: ${b.tags.join(', ')}</small>`
+  : `<small class="text-gray-400">No tags</small>`
+
+const marker = L.marker([loc.lat, loc.lon], { icon: bottleIcon }).addTo(mapInstance)
+  .bindPopup(`
+    <div style="max-width: 200px; font-size: 14px;">
+      ${tagsDisplay}
+      <br/>
+      <button onclick="window.replyToBottle('${b.bottle_id}')" style="margin-top: 6px; padding: 4px 8px; font-size: 13px; border-radius: 4px; background: #eee; border: 1px solid #ccc;">💬 Reply</button>
+    </div>
+  `)
 
 
       allBottleMarkers.push(marker)
