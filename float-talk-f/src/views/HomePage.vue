@@ -130,7 +130,7 @@
           <div class="modal">
             <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
             <p class="mb-4">Your message has been thrown and saved on the map.</p>
-            <button @click="goToMapReply" class="btn-submit w-full max-w-xs">Go back to map</button>
+            <button @click="goToMap" class="btn-submit w-full max-w-xs">Go back to map</button>
           </div>
         </div>
 
@@ -180,7 +180,7 @@
 
                 </div>
 
-                <div class="form-right-content">
+                <div class="form-right-content" ref="chatMessagesRef" >
 
                   <div v-for="msg in messageList" :key="msg.timestamp" :class="[
                     'chat-message',
@@ -211,19 +211,7 @@
         </div>
 
 
-        <!-- All Bottles dropdown -->
-        <!--  <div class="w-full mt-4">
-          <button @click="toggleAllDropdown" class="btn-action w-full flex justify-between items-center">
-            <span>All Bottles</span>
-            <span>{{ allDropdownOpen ? '▲' : '▼' }}</span>
-          </button>
-
-          <div v-if="allDropdownOpen" class="dropdown-list">
-            <div v-for="(bottle, index) in allBottles" :key="index" class="dropdown-item" @click="showBottle(bottle)">
-              {{ bottle && bottle.content ? bottle.content.slice(0, 20) : '[No Content]' }}
-            </div>
-          </div>
-        </div> -->
+      
 
         <!-- All Bottle Detail Modal -->
         <div v-if="allDetailVisible" class="dialog-overlay">
@@ -268,7 +256,7 @@
           <div class="modal">
             <h2 class="text-lg font-semibold mb-4">📦 Reply sent successfully!</h2>
             <p class="mb-4">Your reply was saved.</p>
-            <button @click="goToMap" class="btn-submit w-full max-w-xs">Go back to map</button>
+            <button @click="goToMapReply" class="btn-submit w-full max-w-xs">Go back to map</button>
           </div>
         </div>
 
@@ -318,6 +306,11 @@
       </div>
     </div>
   </div>
+
+
+
+
+  <!--Mobile Version-->
   <div v-if="isMobile" class="mobile-layout">
     <div id="map" class="map-area"></div>
     <div class="mobile-button-bar">
@@ -462,7 +455,7 @@
 
             </div>
 
-            <div class="form-right-content">
+            <div class="form-right-content" ref="chatMessagesRef">
 
               <div v-for="msg in messageList" :key="msg.timestamp" :class="[
                 'chat-message',
@@ -637,7 +630,7 @@
 
             </div>
 
-            <div class="form-right-content">
+            <div class="form-right-content" ref="chatMessagesRef">
 
               <div v-for="msg in messageList" :key="msg.timestamp" :class="[
                 'chat-message',
@@ -803,7 +796,7 @@ const {
   formatDate,
   userId,
   currentBottleId
-} = useChatLogic()
+} = useChatLogic(chatMessagesRef)
 
 onMounted(() => {
   loadChatList()
