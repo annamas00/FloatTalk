@@ -1,7 +1,5 @@
 # FloatTalk
 
-To start the project, you would need to bo to float-talk-f and do npm install with npm run dev after that and then go to the float-talk-b/backend and start the main.py srcipt. 
-
 Ideas from the discussion:
 
     Bottles are tied to a specific location, you can read it only while being at the location. Like geocashing
@@ -13,4 +11,6 @@ cd float-talk-b/backend
 pip install -r requirements.txt
 uvicorn main:app --reload
 
-<img width="300" height="300" alt="frame (1)" src="https://github.com/user-attachments/assets/f7ec3741-2ba4-48fa-b1c9-1ca59571ed28" />
+for frontend: 
+cd float-talk-f
+npm run dev
