@@ -312,8 +312,9 @@ button[type='submit']:hover {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 100%;
-  height: 100%;
+  height: 100vh;         /* full viewport height */
+  background-color: #f9fafb; /* optional background */
+  margin: 0;
 }
 
 .form-wrapper {
