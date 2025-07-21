@@ -49,7 +49,7 @@
 
         <!-- My Bottles Modal -->
         <div v-if="showMyBottleModal" class="form-modal">
-          <div class="form-box">
+          <div class="form-box2">
             <div class="form-header">
               <Mails class="w-5 h-5" />
               <h2 class="dialog-title"> Bottle Detail</h2>
@@ -88,7 +88,7 @@
 
         <!-- new windows -->
         <div v-if="showForm" class="form-modal">
-          <div class="form-box">
+          <div class="form-box2">
 
             <h3 class="text-lg font-bold mb-3">New Bottle</h3>
 
@@ -180,7 +180,7 @@
 
                 </div>
 
-                <div class="form-right-content" ref="chatMessagesRef" >
+                <div class="form-right-content" ref="chatMessagesRef">
 
                   <div v-for="msg in messageList" :key="msg.timestamp" :class="[
                     'chat-message',
@@ -211,7 +211,7 @@
         </div>
 
 
-      
+
 
         <!-- All Bottle Detail Modal -->
         <div v-if="allDetailVisible" class="dialog-overlay">
@@ -333,7 +333,7 @@
     </div>
 
     <div v-if="showMyBottleModal" class="form-modal">
-      <div class="form-box">
+      <div class="form-box2">
         <div class="form-header">
           <Mails class="w-5 h-5" />
           <h2 class="dialog-title"> Bottle Detail</h2>
@@ -347,7 +347,7 @@
             <div class="chat-info-wrapper">
               <p class="dialog-tags">
                 <CalendarFold class="w-4 h-4" />
-               {{ new Date(new Date(bottle.timestamp).getTime() + 2 * 60 * 60 * 1000).toLocaleString() }}
+                {{ new Date(new Date(bottle.timestamp).getTime() + 2 * 60 * 60 * 1000).toLocaleString() }}
               </p>
 
               <div class="dialog-tags">
@@ -367,7 +367,7 @@
       </div>
     </div>
     <div v-if="showForm" class="form-modal">
-      <div class="form-box">
+      <div class="form-box2">
 
         <h3 class="text-lg font-bold mb-3">New Bottle</h3>
 
@@ -448,15 +448,14 @@
 
           <!-- .form-right -->
           <div class="form-right" v-if="showChatDetailModal">
-
             <div class="form-right-header">
+              <!-- ← Back for mobile only -->
+              <button @click="showChatDetailModal = false" class="mobile-back-btn only-mobile">← Back</button>
 
               <Handshake class="w-5 h-5" />
-
             </div>
 
             <div class="form-right-content" ref="chatMessagesRef">
-
               <div v-for="msg in messageList" :key="msg.timestamp" :class="[
                 'chat-message',
                 msg.sender_id === userId ? 'self-message' : 'other-message'
@@ -466,8 +465,6 @@
                   <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
                 </div>
               </div>
-
-
             </div>
 
             <div class="form-right-reply">
@@ -549,7 +546,7 @@
       </div>
     </div>
     <div v-if="showForm" class="form-modal">
-      <div class="form-box">
+      <div class="form-box2">
 
         <h3 class="text-lg font-bold mb-3">New Bottle</h3>
 
@@ -622,9 +619,10 @@
           </div>
 
           <!-- .form-right -->
-          <div class="form-right" v-if="showChatDetailModal">
+          <div class="form-right" :class="{ 'mobile-hidden': !showChatDetailModal }">
 
             <div class="form-right-header">
+              <button @click="showChatDetailModal = false" class="mobile-back-btn only-mobile">← Back</button>
 
               <Handshake class="w-5 h-5" />
 
@@ -700,7 +698,7 @@ const API_BASE =
 
 
 const isAutoDetected = ref(false)
-const visibilityKm = ref(5)          
+const visibilityKm = ref(5)
 const maxReaders = ref(null)
 const showMyBottleModal = ref(false)
 const chatMessagesRef = ref(null)
@@ -1280,6 +1278,29 @@ form-modal {
   flex-direction: column;
 }
 
+
+
+.form-box2 {
+
+  background: rgb(253, 253, 253);
+
+  padding: 0 1.5rem 1.5rem;
+
+  border-radius: 1rem;
+
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+
+  width: 90%;
+
+  max-width: 400px;
+
+  max-height: 550px;
+
+  overflow-y: auto;
+
+  color: black
+}
+
 .form-header {
   height: 5%;
   background-color: #ddd;
@@ -1343,6 +1364,7 @@ form-modal {
 }
 
 .form-right-header {
+  position: relative;
   padding: 0.5rem;
   border-bottom: 1px solid #ddd;
   background-color: #f4f4f4;
@@ -1745,5 +1767,124 @@ h3 {
 
 .icon {
   text-align: center;
+}
+
+@media (max-width: 768px) {
+  .only-mobile {
+    display: inline;
+  }
+
+  .form-box {
+    width: 100vw !important;
+    height: 100vh !important;
+    border-radius: 0;
+    max-height: none;
+    max-width: none;
+    margin: 0;
+    position: relative;
+  }
+
+  .form-header {
+    height: auto;
+    padding: 0.75rem;
+    font-size: 1rem;
+    justify-content: space-between;
+  }
+
+  .form-content {
+    flex-direction: column !important;
+    height: 100%;
+  }
+
+  .form-right.mobile-hidden {
+    display: none !important;
+  }
+
+  .form-left {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .form-right {
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    display: flex;
+    background-color: #f8f8f8;
+    z-index: 10;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+
+  .form-right-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.75rem;
+  }
+
+  .form-right-reply {
+    height: auto;
+    padding: 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: flex-end;
+  }
+
+  .form-right-reply-blank,
+  .form-right-reply-button {
+    width: 100%;
+  }
+
+  .form-right-reply-button {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .reply-input {
+    min-height: 60px;
+    resize: vertical;
+  }
+
+  .chat-button {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .chat-info-wrapper,
+  .chat-info-text {
+    font-size: 0.75rem;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .chat-preview {
+    font-size: 0.75rem;
+  }
+  .mobile-back-btn {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    padding: 0.5rem;
+    margin-right: auto;
+    color: #007bff;
+    cursor: pointer;
+  }
+
+  .form-right-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.5rem;
+  }
+
+}
+
+@media (min-width: 769px) {
+  .only-mobile {
+    display: none !important;
+  }
 }
 </style>
