@@ -16,6 +16,7 @@ export const messageHistory = ref([])
 export const userId = localStorage.getItem('user_id')
 export const showReplySuccessModal = ref(false)  
 
+const API_BASE = import.meta.env?.VITE_API_BASE || 'http://localhost:8000'
 
 
 // Toggle reply input
@@ -56,6 +57,19 @@ console.log('📋 chatList:', chatList.value.map(c => c.conversation_id))
   }
 }
 
+// Hilfsfunktion: Bottle neu laden (damit readers_count/reader_ids live sind)
+async function refreshBottle(bottle) {
+  try {
+    const { data } = await axios.get(`${API_BASE}/bottles/${bottle.bottle_id}`)
+    // akzeptiere { bottle: {...} } oder direkt {...}
+    const fresh = data?.bottle ?? data
+    if (fresh && typeof fresh === 'object') {
+      Object.assign(bottle, fresh)
+    }
+  } catch (e) {
+    console.warn('Bottle refresh failed', e)
+  }
+}
 
 //reply for bottle
 export async function sendReply(selectedAllBottle) {
@@ -85,6 +99,9 @@ console.log('selectedAllBottle keys:', Object.keys(toRaw(selectedAllBottle)))
     })
 
     console.log('✅ Reply sent:', response.data)
+
+     if (response.data?.status === 'success') {
+
     cancelReply()
      await nextTick()
     closeAllDetailModal()   
@@ -101,18 +118,37 @@ console.log('selectedAllBottle keys:', Object.keys(toRaw(selectedAllBottle)))
     )
 
     if (matchingConversation) {
-      moveConversationToTop(matchingConversation.conversation_id, replyContent.value)
-
-      // (Optional) Direkt öffnen:
-      selectedConversation.value = matchingConversation.conversation_id
+      try {moveConversationToTop?.(matchingConversation.conversation_id, replyContent.value);} catch{}
+      selectedConversation.value = matchingConversation.conversation_id;
       // showChatModal.value = true
       // showChatDetailModal.value = true
-    } else {
-      console.warn('⚠️ No matching conversation found to move')
+    }  return;} 
+      
+      // Fehlermeldungen der API (inkl. Limit)
+      const msg = response.data?.message || 'Failed to send reply.';
+      if (/max(imum)? number of readers|Max readers reached/i.test(msg)) {
+        alert('Limit erreicht: Für diese Bottle sind keine weiteren Antworten möglich.');
+        await refreshBottle(selectedAllBottle);
+        await loadNearbyBottles();
+      } else if (/already replied/i.test(msg)) {
+        // Darf weiterchatten, zählt nur nicht erneut
+        alert('Hinweis: Du hast bereits geantwortet – die Antwort zählt nicht erneut.')
+        await refreshBottle(selectedAllBottle);
+      } else {
+        alert(msg);
+      }
     }
-  } catch (err) {
-    console.error('❌ Reply failed:', err)
-    alert('Failed to send reply.')
+  catch (err) {
+    const apiMsg = err?.response?.data?.message;
+    if (/max(imum)? number of readers|Max readers reached/i.test(apiMsg)) {
+      alert('Limit erreicht: Für diese Bottle sind keine weiteren Antworten möglich.');
+      await refreshBottle(selectedAllBottle);
+       await loadNearbyBottles();
+      return;
+    }
+    
+    console.error('❌ Reply failed:', err);
+    alert(apiMsg || 'Failed to send reply.');
   }
 } 
 

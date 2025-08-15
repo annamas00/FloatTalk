@@ -21,6 +21,8 @@ from datetime import datetime, timezone
 from bson import ObjectId
 from zoneinfo import ZoneInfo
 from sensitive_filter import contains_sensitive_word
+from pymongo import ReturnDocument
+
 
 # ------------------ Setup ------------------
 
@@ -311,18 +313,47 @@ async def send_reply(data: dict):
     max_readers = bottle.get("max_readers")
     reader_ids = bottle.get("reader_ids", [])
 
-    # Prüfen, ob Limit erreicht
-    if max_readers is not None:
-        if sender_id in reader_ids:
-            return {"status": "error", "message": "You have already replied to this bottle."}
-        if len(reader_ids) >= max_readers:
-            return {"status": "error", "message": "This bottle has reached the maximum number of readers."}
 
-    # leser hinzufügen
-    await bottles.update_one(
-        {"bottle_id": bottle_id},
-        {"$addToSet": {"reader_ids": sender_id}}  # kein Duplikat
-    )
+    # Max-Limit ENFORCEN, nur wenn Sender noch nicht gezählt wurde
+    if max_readers is not None:
+        updated = await bottles.find_one_and_update(
+            {
+                "bottle_id": bottle_id,
+                "reader_ids": {"$ne": sender_id},  # darf noch nicht gezählt sein
+                "$expr": {
+                    "$lt": [
+                        { "$ifNull": [
+                            "$readers_count",
+                            { "$size": { "$ifNull": ["$reader_ids", []] } }
+                        ]},
+                        { "$toInt": "$max_readers" }  # falls als String gespeichert
+                    ]
+                }
+            },
+            {
+                "$addToSet": {"reader_ids": sender_id},
+                "$inc": {"readers_count": 1}
+            },
+            return_document=ReturnDocument.AFTER
+        )
+
+        if not updated:
+            # Entweder Limit erreicht ODER User war schon gezählt
+            if sender_id not in reader_ids:
+                return {
+                    "status": "error",
+                    "message": "This bottle has reached the maximum number of readers."
+                }
+        else:
+            bottle = updated  # aktuellen Stand weiterverwenden
+    else:
+        # Kein Limit: optional Leser-Liste pflegen (ohne Zählung)
+        if sender_id not in reader_ids:
+            await bottles.update_one(
+                {"bottle_id": bottle_id},
+                {"$addToSet": {"reader_ids": sender_id}}
+            )
+
 
     conv = await conversations.find_one({"bottle_id": bottle_id})
     if not conv:
@@ -565,19 +596,17 @@ async def nearby(lat: float, lon: float, radius: int = 5000):
     "location.lat": {"$exists": True},
     "location.lon": {"$exists": True},
     "$or": [
-        { "max_readers": { "$exists": False } },
-        { "max_readers": None },
-        {
-            "$expr": {
-                "$cond": [
-                    { "$gt": ["$max_readers", 0] },
-                    { "$lt": [{ "$size": { "$ifNull": ["$reader_ids", []] } }, "$max_readers"] },
-                    True
-                ]
-            }
-        }
+        { "max_readers": { "$exists": False } },   # kein Limit-Feld
+        { "max_readers": None },                   # explizit null/kein Limit
+        { "$expr": {
+            "$lt": [
+                { "$ifNull": ["$readers_count", { "$size": { "$ifNull": ["$reader_ids", []] } }] },
+                { "$toInt": "$max_readers" }
+            ]
+        }}
     ]
 })
+
       
 
     async for doc in cursor:

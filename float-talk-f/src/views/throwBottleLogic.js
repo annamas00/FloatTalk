@@ -112,6 +112,8 @@ export async function submitBottle(refreshNearby) {
   console.log('content:', bottleContent.value)
   console.log('tags:', tagList.value)
   console.log('location:', location.value)
+  const parsedMax = Number.parseInt(maxReaders.value, 10);
+  const maxReadersPayload = Number.isFinite(parsedMax) && parsedMax > 0 ? parsedMax : null;
   const storedLat = localStorage.getItem('userLat')
 const storedLon = localStorage.getItem('userLon')
 const storedCoords = localStorage.getItem('coords')
@@ -123,6 +125,10 @@ localStorage.setItem('lastBottleLon', storedLon)
     
     return
   }
+if (maxReaders.value === 0) {
+  return // kein Senden
+}
+
 
   try {
     const res = await axios.post(`${API_BASE}/add_bottle`, {
@@ -138,7 +144,8 @@ localStorage.setItem('lastBottleLon', storedLon)
       }
       : JSON.parse(storedCoords),
 city: city.value,
-  max_readers: maxReaders.value ? parseInt(maxReaders.value) : null, 
+  //max_readers: maxReaders.value ? parseInt(maxReaders.value) : null, 
+  max_readers: maxReadersPayload
       })
     console.log('✅ Server response:', res.data)
 

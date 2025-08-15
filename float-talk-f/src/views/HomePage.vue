@@ -117,8 +117,19 @@
               <input type="range" v-model="visibilityKm" min="1" max="10" step="1"
                 class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
             </div>
+             <!-- Limit readers -->
             <label class="block mb-1 text-sm font-medium">Limit readers (optional):</label>
-            <input type="number" v-model="maxReaders" min="1" placeholder="e.g. 3" class="input mb-4" />
+  <input
+  type="number"
+  v-model.number="maxReaders"
+  min="1"
+  placeholder="e.g. 3"
+  class="input mb-4"
+  :class="{ 'border-red-500': maxReaders === 0 }"
+/>
+<p v-if="maxReaders === 0" class="text-red-500 text-sm mt-1">
+  ⚠️ The minimal number of readers is 1. Please insert valid value.
+</p>
             <div class="flex justify-end space-x-2">
               <button class="btn-cancel" @click="showForm = false">Cancel</button>
               <button class="btn-submit" @click="submitBottle(loadNearbyBottles)">Send</button>
@@ -230,17 +241,25 @@
               </div>
 
               <!-- Reply Button -->
+               <!-- Fall 1: Reply-Feld noch nicht offen -->
               <div class="dialog-reply mt-4">
                 <div v-if="!showReplyInput" class="flex justify-end">
-                  <button class="btn-submit" @click="toggleReplyBox(selectedAllBottle?.bottle_id)">Reply</button>
+                 <button class="btn-submit" @click="toggleReplyBox(selectedAllBottle?.bottle_id)" 
+                 :disabled="selectedAllBottle?.max_readers > 0 && selectedAllBottle?.readers_count >= selectedAllBottle?.max_readers">,Reply </button>
+                 <div v-if="selectedAllBottle?.max_readers > 0 && selectedAllBottle?.readers_count >= selectedAllBottle?.max_readers"
+                   class="text-red-500 text-sm mt-2">
+                   Limit reached: no more replies allowed.
+                  </div>
                 </div>
-                <div v-else>
+                <!-- Fall 2: Reply-Feld offen -->
+                <div v-else>  
                   <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
                   <div class="flex justify-end mt-2 space-x-2">
                     <button class="btn-cancel" @click="cancelReply">Cancel</button>
                     <button class="btn-submit" @click="sendReply(selectedAllBottle)">Send</button>
                   </div>
                 </div>
+
                 <div v-if="showSuccessModal" class="modal-overlay">
                   <div class="modal">
                     <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
@@ -396,9 +415,20 @@
           <input type="range" v-model="visibilityKm" min="1" max="10" step="1"
             class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
         </div>
+        <!-- Limit readers -->
         <label class="block mb-1 text-sm font-medium">Limit readers (optional):</label>
-        <input type="number" v-model="maxReaders" min="1" placeholder="e.g. 3" class="input mb-4" />
-        <div class="flex justify-end space-x-2">
+          <input
+  type="number"
+  v-model.number="maxReaders"
+  min="1"
+  placeholder="e.g. 3"
+  class="input mb-4"
+  :class="{ 'border-red-500': maxReaders === 0 }"
+/>
+<p v-if="maxReaders === 0" class="text-red-500 text-sm mt-1">
+  ⚠️ The minimal number of readers is 1. Please insert valid value.
+</p> 
+<div class="flex justify-end space-x-2">
           <button class="btn-cancel" @click="showForm = false">Cancel</button>
           <button class="btn-submit" @click="submitBottle(loadNearbyBottles)">Send</button>
         </div>
@@ -497,10 +527,22 @@
           </div>
 
           <!-- Reply Button -->
+           <!-- Fall 1: Reply-Feld noch nicht offen -->
           <div class="dialog-reply mt-4">
             <div v-if="!showReplyInput" class="flex justify-end">
-              <button class="btn-submit" @click="toggleReplyBox(selectedAllBottle?.bottle_id)">Reply</button>
-            </div>
+<button class="btn-submit"
+            @click="toggleReplyBox(selectedAllBottle?.bottle_id)"
+            :disabled="selectedAllBottle?.max_readers > 0 &&
+                       selectedAllBottle?.readers_count >= selectedAllBottle?.max_readers">
+      Reply
+    </button>
+    <div v-if="selectedAllBottle?.max_readers > 0 &&
+               selectedAllBottle?.readers_count >= selectedAllBottle?.max_readers"
+         class="text-red-500 text-sm mt-2">
+      Limit reached: no more replies allowed.
+    </div>
+  </div>
+               <!-- Fall 2: Reply-Feld offen -->
             <div v-else>
               <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
               <div class="flex justify-end mt-2 space-x-2">
@@ -672,7 +714,7 @@ import { Send, BookOpen, UserCircle, MessageSquareMore, Mails, Bird, Tag, Calend
 import { watch } from 'vue'
 import { ttlMinutes } from './throwBottleLogic.js'
 import * as turf from '@turf/turf'
-import bottleIconUrl from '../assets/leaflet/bottle.png'
+import bottleIconUrl from '../assets/leaflet/bottle.png'  //from https://www.flaticon.com/de/kostenloses-icon/flaschenpost_6829994?related_id=6829994&origin=search
 
 
 function handleSendReply() {
@@ -699,7 +741,7 @@ const API_BASE =
 
 const isAutoDetected = ref(false)
 const visibilityKm = ref(5)
-const maxReaders = ref(null)
+//const maxReaders = ref(null)
 const showMyBottleModal = ref(false)
 const chatMessagesRef = ref(null)
 
@@ -722,7 +764,8 @@ import {
   handleTagKeydown,
   prepareThrowForm,
   showSuccessModal,
-  openBottle
+  openBottle, 
+  maxReaders
 } from './throwBottleLogic.js'
 
 import {
@@ -770,11 +813,6 @@ import {
   sendReply,
   showReplySuccessModal
 } from './replyLogic.js'
-
-
-
-
-import { computed } from 'vue'
 
 
 import {
@@ -856,7 +894,7 @@ onMounted(async () => {
   const queryLat = query.get('lat')
   const queryLon = query.get('lon')
   const msg = query.get('msg')
-  const storedCoords = localStorage.getItem('coords' || '{}') // ← you had this, kept for consistency
+  const storedCoords = localStorage.getItem('coords' || '{}') 
 
   if (queryLat && queryLon && msg) {
     const marker = L.marker([parseFloat(queryLat), parseFloat(queryLon)])
@@ -1077,7 +1115,7 @@ async function loadNearbyBottles() {
     `${API_BASE}/nearby_bottles`,
     { params: { lat: userLat.value, lon: userLon.value, radius: 5000 } }
   )
-  allBottles.value = res.data.bottles        // aus deinem allBottles-Store
+  allBottles.value = res.data.bottles       
 }
 
 
