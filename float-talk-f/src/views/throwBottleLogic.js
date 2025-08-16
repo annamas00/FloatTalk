@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import axios from 'axios'
 import { fetchMyBottles, myBottles } from './myBottlesLogic.js'
+import { getUserId } from './replyLogic.js'
 
 export const showForm = ref(false)
 export const bottleContent = ref('')
@@ -10,9 +11,8 @@ export const tagInput = ref('')
 export const city = ref('')
 export const showSuccessModal = ref(false)
 export const ttlMinutes = ref(60)
-export const userId = localStorage.getItem('user_id')
-export const maxReaders = ref(null)
-
+export const maxReaders = ref(null) 
+export const visibilityKm = ref(5)
 
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
@@ -112,13 +112,21 @@ export async function submitBottle(refreshNearby) {
   console.log('content:', bottleContent.value)
   console.log('tags:', tagList.value)
   console.log('location:', location.value)
+
+  const allowedTTLs = new Set([30, 60, 240, 1440])
+  const ttl = Number(ttlMinutes?.value ?? 60)
+  const ttlMinutesPayload = allowedTTLs.has(ttl) ? ttl : 60
+  const visibilityKmPayload = Number(visibilityKm?.value ?? 5) || 5
   const parsedMax = Number.parseInt(maxReaders.value, 10);
   const maxReadersPayload = Number.isFinite(parsedMax) && parsedMax > 0 ? parsedMax : null;
   const storedLat = localStorage.getItem('userLat')
-const storedLon = localStorage.getItem('userLon')
-const storedCoords = localStorage.getItem('coords')
-localStorage.setItem('lastBottleLat', storedLat)
-localStorage.setItem('lastBottleLon', storedLon)
+  const storedLon = localStorage.getItem('userLon')
+  const storedCoords = localStorage.getItem('coords')
+
+  localStorage.setItem('lastBottleLat', storedLat)
+  localStorage.setItem('lastBottleLon', storedLon)
+
+
 
   if (!bottleContent.value || !location.value) {
     console.warn('no locations')
@@ -133,7 +141,7 @@ if (maxReaders.value === 0) {
   try {
     const res = await axios.post(`${API_BASE}/add_bottle`, {
       bottle_id: "btl_" + Date.now(),
-      sender_id: userId,
+      sender_id: getUserId(),        
       content: bottleContent.value,
       tags: tagList.value,
       location: storedLat && storedLon
@@ -143,9 +151,10 @@ if (maxReaders.value === 0) {
           address : location.value,
       }
       : JSON.parse(storedCoords),
-city: city.value,
-  //max_readers: maxReaders.value ? parseInt(maxReaders.value) : null, 
-  max_readers: maxReadersPayload
+      city: city.value,
+      max_readers: maxReadersPayload,
+      ttl_minutes: ttlMinutesPayload,
+      visibility_km: visibilityKmPayload,
       })
     console.log('✅ Server response:', res.data)
 
@@ -153,6 +162,15 @@ if (res.data.status === 'texterror') {
     alert('❌ Text error: ' + res.data.message);
     return;
   }
+
+  if (res.data.visible_until) {
+      const msLeft = new Date(res.data.visible_until).getTime() - Date.now()
+      if (msLeft > 0) {
+        setTimeout(() => {
+          if (typeof refreshNearby === 'function') refreshNearby()
+        }, msLeft)
+      }
+    }
 
     // refresh form
     showForm.value = false
@@ -162,7 +180,9 @@ if (res.data.status === 'texterror') {
     tagList.value = []
     tagInput.value = ''
     maxReaders.value = null  
-        if (refreshNearby) {
+    if (ttlMinutes) ttlMinutes.value = 60
+    if (visibilityKm) visibilityKm.value = 5
+    if (refreshNearby) {
       await refreshNearby()
     }
        await fetchMyBottles() 

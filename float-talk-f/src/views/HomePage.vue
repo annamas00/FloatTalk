@@ -195,7 +195,7 @@
 
                   <div v-for="msg in messageList" :key="msg.timestamp" :class="[
                     'chat-message',
-                    msg.sender_id === userId ? 'self-message' : 'other-message'
+                    String(msg.sender_id) === String(getUserId()) ? 'self-message' : 'other-message'
                   ]">
                     <div class="chat-bubble">
                       <p class="text-xs text-gray-500 mb-1">{{ formatDate(msg.timestamp) }}</p>
@@ -245,7 +245,7 @@
               <div class="dialog-reply mt-4">
                 <div v-if="!showReplyInput" class="flex justify-end">
                  <button class="btn-submit" @click="toggleReplyBox(selectedAllBottle?.bottle_id)" 
-                 :disabled="selectedAllBottle?.max_readers > 0 && selectedAllBottle?.readers_count >= selectedAllBottle?.max_readers">,Reply </button>
+                 :disabled="selectedAllBottle?.max_readers > 0 && selectedAllBottle?.readers_count >= selectedAllBottle?.max_readers">Reply </button>
                  <div v-if="selectedAllBottle?.max_readers > 0 && selectedAllBottle?.readers_count >= selectedAllBottle?.max_readers"
                    class="text-red-500 text-sm mt-2">
                    Limit reached: no more replies allowed.
@@ -488,7 +488,7 @@
             <div class="form-right-content" ref="chatMessagesRef">
               <div v-for="msg in messageList" :key="msg.timestamp" :class="[
                 'chat-message',
-                msg.sender_id === userId ? 'self-message' : 'other-message'
+                String(msg.sender_id) === String(getUserId()) ? 'self-message' : 'other-message'
               ]">
                 <div class="chat-bubble">
                   <p class="text-xs text-gray-500 mb-1">{{ formatDate(msg.timestamp) }}</p>
@@ -674,7 +674,7 @@
 
               <div v-for="msg in messageList" :key="msg.timestamp" :class="[
                 'chat-message',
-                msg.sender_id === userId ? 'self-message' : 'other-message'
+                String(msg.sender_id) === String(getUserId()) ? 'self-message' : 'other-message'
               ]">
                 <div class="chat-bubble">
                   <p class="text-xs text-gray-500 mb-1">{{ formatDate(msg.timestamp) }}</p>
@@ -703,7 +703,7 @@
 </template>
 
 <script setup>
-import { onMounted, nextTick, ref } from 'vue'
+import { onMounted, nextTick, ref, onUnmounted } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import axios from 'axios'
@@ -712,7 +712,6 @@ import markerIcon from '../assets/leaflet/marker-icon.png'
 import markerShadow from '../assets/leaflet/marker-shadow.png'
 import { Send, BookOpen, UserCircle, MessageSquareMore, Mails, Bird, Tag, CalendarFold, Handshake, Waves } from 'lucide-vue-next'
 import { watch } from 'vue'
-import { ttlMinutes } from './throwBottleLogic.js'
 import * as turf from '@turf/turf'
 import bottleIconUrl from '../assets/leaflet/bottle.png'  //from https://www.flaticon.com/de/kostenloses-icon/flaschenpost_6829994?related_id=6829994&origin=search
 
@@ -740,7 +739,7 @@ const API_BASE =
 
 
 const isAutoDetected = ref(false)
-const visibilityKm = ref(5)
+//const visibilityKm = ref(5)
 //const maxReaders = ref(null)
 const showMyBottleModal = ref(false)
 const chatMessagesRef = ref(null)
@@ -765,7 +764,9 @@ import {
   prepareThrowForm,
   showSuccessModal,
   openBottle, 
-  maxReaders
+  maxReaders, 
+  visibilityKm,
+  ttlMinutes
 } from './throwBottleLogic.js'
 
 import {
@@ -783,15 +784,7 @@ onMounted(() => {
 
   fetchMyBottles()
 })
-//onMounted(() => {
 
-//fetchAllBottles()
-//})
-
-
-onMounted(() => {
-  loadChatList();
-});
 
 import {
   selectedBottle as selectedAllBottle,
@@ -804,6 +797,17 @@ import {
   toggleAllDropdown
 } from './allBottlesLogic.js'
 
+onMounted(() => {
+  loadChatList();
+  
+  window.addEventListener('refresh-bottles', loadNearbyBottles);
+});
+
+onUnmounted(() => {
+  // Sauber wieder entfernen
+  window.removeEventListener('refresh-bottles', loadNearbyBottles);
+});
+
 import {
   showReplyInput,
   replyContent,
@@ -811,7 +815,8 @@ import {
   cancelReply,
   sendReply2,
   sendReply,
-  showReplySuccessModal
+  showReplySuccessModal, 
+  getUserId
 } from './replyLogic.js'
 
 
@@ -830,7 +835,7 @@ const {
   loadChatList,
   openConversation,
   formatDate,
-  userId,
+  //userId,
   currentBottleId
 } = useChatLogic(chatMessagesRef)
 
@@ -1057,12 +1062,6 @@ watch(
       const loc = b.location || {}
       if (!('lat' in loc && 'lon' in loc)) return
 
-      /*const marker = L.marker([loc.lat, loc.lon], { icon: bottleIcon }).addTo(mapInstance)
-        .bindPopup(`
-  <small>Tags: ${(b.tags || []).join(', ')}</small><br/>
-  <button onclick="window.replyToBottle('${b.bottle_id}')">💬 Reply</button>
-`)*/
-
       const tagsDisplay = (b.tags && b.tags.length > 0)
         ? `<small>Tags: ${b.tags.join(', ')}</small>`
         : `<small class="text-gray-400">No tags</small>`
@@ -1092,15 +1091,7 @@ window.replyToBottle = (bottleId) => {
   showReplyInput.value = false
 
 }
-//if (bottle) {
-//viewBottleDetail(bottle)              // zeigt das Detailfenster
-//toggleReplyBox(bottleId)              // öffnet das Reply-Feld
-//} else {
-//alert('Bottle not found')
-//viewBottleDetail(bottle)            // öffnet das Modal
-//nextTick(() => toggleReplyBox(bottleId)) // jetzt erst Eingabefeld
-//}
-//}
+
 
 window.tryOpen = id => {
   const bottle = allBottles.value.find(b => b.bottle_id === id)

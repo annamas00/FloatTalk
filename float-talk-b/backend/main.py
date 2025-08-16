@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr
 from passlib.context import CryptContext
 from jose import jwt, JWTError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from motor.motor_asyncio import AsyncIOMotorClient,AsyncIOMotorDatabase
 from dotenv import load_dotenv
@@ -17,7 +17,6 @@ from fastapi import APIRouter, HTTPException, Depends
 from bson import ObjectId
 from fastapi.encoders import jsonable_encoder
 import math
-from datetime import datetime, timezone
 from bson import ObjectId
 from zoneinfo import ZoneInfo
 from sensitive_filter import contains_sensitive_word
@@ -45,7 +44,11 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
 ALGORITHM = "HS256"
 MONGO_URI = os.getenv("MONGO_URI")
 
-client = AsyncIOMotorClient(MONGO_URI)
+
+client = AsyncIOMotorClient(
+    MONGO_URI,
+    tz_aware=True,        
+)
 db = client["floattalk"]
 users = db["users"]
 bottles = db["bottles"]
@@ -57,9 +60,19 @@ logs = db["logs"]
 async def startup_db_check():
     try:
         await client.admin.command("ping")
+        # löscht Dokumente automatisch ab "visible_until"
+        # 0 Sekunden heißt: lösche genau ab diesem Zeitpunkt (Mongo-Granularität ~60s).
+        await bottles.create_index("visible_until", expireAfterSeconds=0)
+
+        # Query-Indexe
+        await bottles.create_index([("status",1), ("reply_enabled",1), ("is_full",1)])
+        await bottles.create_index([("location.lat",1), ("location.lon",1)])
+        await bottles.create_index([("bottle_id",1)], unique=True)
         print("✅ MongoDB connected!")
     except Exception as e:
         print("❌ MongoDB connection failed:", e)
+
+
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -107,6 +120,14 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     if email is None:
         raise HTTPException(status_code=401, detail="Invalid token payload")
     return email
+
+
+
+async def nickname_of(user_id: str) -> str:
+    if not user_id:
+        return ""
+    doc = await users.find_one({"user_id": user_id}, {"nickname": 1})
+    return (doc or {}).get("nickname") or user_id
 
 # ------------------ Auth ------------------
 
@@ -168,14 +189,9 @@ async def create_anon_user():
 
 # ------------------ Bottles & Logs ------------------
 
-LOCAL_TZ = ZoneInfo("Europe/Berlin")
+#LOCAL_TZ = ZoneInfo("Europe/Berlin")
 
 
-client = AsyncIOMotorClient(
-    MONGO_URI,
-    tz_aware=True,        
-)
-db = client["floattalk"]
 
 def now_local():
     return datetime.now(timezone.utc)
@@ -213,12 +229,28 @@ async def add_bottle(req: Request):
     data = await req.json()
     content = data.get("content", "")
 
-   
     if contains_sensitive_word(content):
         return {
             "status": "texterror",
             "message": "Your message contains sensitive words. Please revise and try again."
         }
+    
+     # --- Sichtbarkeitsdauer in Minuten (nur erlaubte Werte), Default 60 ---
+    allowed = {30, 60, 240, 1440}
+    raw_ttl = data.get("ttl_minutes", 60)
+    try:
+        ttl_minutes = int(raw_ttl) if int(raw_ttl) in allowed else 60
+    except (TypeError, ValueError):
+        ttl_minutes = 60
+
+    now = now_local()
+    visible_until = now + timedelta(minutes=ttl_minutes)
+
+    raw_max = data.get("max_readers")
+    try:
+        max_readers = int(raw_max) if raw_max not in (None, "", 0, "0") else None
+    except (ValueError, TypeError):
+        max_readers = None
 
     bottle_doc = {
         "bottle_id": data["bottle_id"],
@@ -234,11 +266,15 @@ async def add_bottle(req: Request):
         "reply_enabled": True,
         "city": data.get("city", ""),
         "visibility_km": data.get("visibility_km", 5),
-        "max_readers": data.get("max_readers"),
+        "max_readers": max_readers,
         "reader_ids": [],
+        "readers_count": 0,
+        "is_full": False,
+        "visible_for_min": ttl_minutes,    
+        "visible_until": visible_until,
     }
     await bottles.insert_one(bottle_doc)
-    return {"status": "success", "message": "Bottle stored!"}
+    return {"status": "success", "message": "Bottle stored!", "visible_until": visible_until, "visible_for_min": ttl_minutes}
 
 @app.get("/my_bottles")
 async def get_my_bottles(user_id: str):
@@ -253,18 +289,6 @@ async def get_my_bottles(user_id: str):
         } async for doc in cursor
     ]}
 
-#@app.get("/all_bottles")
-#async def get_all_bottles():
- #   cursor = bottles.find().sort("bottle_timestamp", -1)
-  #  return {"bottles": [
-   #     {
-     #       "bottle_id": doc.get("bottle_id"),
-    #        "content": doc.get("content"),
-      #      "tags": doc.get("tags", []),
-       #     "timestamp": doc.get("bottle_timestamp"),
-        #    "status": doc.get("status", "floating")
-        #} async for doc in cursor
-    #]}
 @app.get("/all_bottles")
 async def get_all_bottles():
     cursor = bottles.find().sort("bottle_timestamp", -1)
@@ -305,55 +329,74 @@ async def send_reply(data: dict):
     if not all([bottle_id, sender_id, receiver_id, content]):
         return {"status": "error", "message": "Missing required fields"}
     
+    
+    now = now_local()
       # Bottle laden
-    bottle = await bottles.find_one({"bottle_id": bottle_id})
+    bottle = await bottles.find_one(
+    {"bottle_id": bottle_id},
+    projection={"_id":1,"sender_id":1,"max_readers":1,"reader_ids":1,"readers_count":1,"is_full":1,"reply_enabled":1,"status":1,"visible_until":1}
+    )
     if not bottle:
         return {"status": "error", "message": "Bottle not found"}
+    
+    if bottle.get("visible_until") and now >= bottle["visible_until"]:
+        return {"status": "error", "message": "This bottle has expired."}
 
+    owner_id = bottle.get("sender_id")
     max_readers = bottle.get("max_readers")
     reader_ids = bottle.get("reader_ids", [])
+    try:
+        max_readers = int(max_readers) if max_readers is not None else None
+    except (TypeError, ValueError):
+        max_readers = None
 
 
-    # Max-Limit ENFORCEN, nur wenn Sender noch nicht gezählt wurde
-    if max_readers is not None:
-        updated = await bottles.find_one_and_update(
-            {
-                "bottle_id": bottle_id,
-                "reader_ids": {"$ne": sender_id},  # darf noch nicht gezählt sein
-                "$expr": {
-                    "$lt": [
-                        { "$ifNull": [
-                            "$readers_count",
-                            { "$size": { "$ifNull": ["$reader_ids", []] } }
-                        ]},
-                        { "$toInt": "$max_readers" }  # falls als String gespeichert
-                    ]
-                }
-            },
-            {
-                "$addToSet": {"reader_ids": sender_id},
-                "$inc": {"readers_count": 1}
-            },
-            return_document=ReturnDocument.AFTER
-        )
+    # Ist der Absender schon Teilnehmer? (Owner zählt als Teilnehmer)
+    existing_member = (sender_id == owner_id) or (sender_id in reader_ids)
 
-        if not updated:
-            # Entweder Limit erreicht ODER User war schon gezählt
-            if sender_id not in reader_ids:
-                return {
-                    "status": "error",
-                    "message": "This bottle has reached the maximum number of readers."
-                }
+
+    
+    if bottle.get("visible_until") and now >= bottle["visible_until"] and not existing_member:
+        return {"status":"error","message":"This bottle has expired."}
+    # --- Nur NEUE Teilnehmer limitieren/ablehnen ---
+    if not existing_member:
+        # Ablauf prüfen – hier blocken wir neue Beitritte, Chat bestehender Teilnehmer bleibt erlaubt
+        if bottle.get("visible_until") and now >= bottle["visible_until"]:
+            return {"status": "error", "message": "This bottle has expired."}
+
+        if max_readers is not None:
+            # Atomisch als Leser hinzufügen, wenn noch Platz
+            updated = await bottles.find_one_and_update(
+                {
+                    "bottle_id": bottle_id,
+                    "reply_enabled": True,       # neue Beitritte nur wenn offen
+                    "is_full": {"$ne": True},
+                    "reader_ids": {"$ne": sender_id},
+                    "$expr": {"$lt": ["$readers_count", "$max_readers"]}
+                },
+                {
+                    "$addToSet": {"reader_ids": sender_id},
+                    "$inc": {"readers_count": 1}
+                },
+                return_document=ReturnDocument.AFTER
+            )
+            if not updated:
+                # Kein Platz mehr für NEUE Teilnehmer
+                return {"status": "error", "message": "This bottle has reached the maximum number of readers."}
+
+            # Falls jetzt voll → schließen (nur für neue Beitritte relevant)
+            eff = updated.get("readers_count") or len(updated.get("reader_ids") or [])
+            if eff >= (updated.get("max_readers") or 0):
+                await bottles.update_one(
+                    {"_id": updated["_id"]},
+                    {"$set": {"is_full": True, "reply_enabled": False}}
+                )
         else:
-            bottle = updated  # aktuellen Stand weiterverwenden
-    else:
-        # Kein Limit: optional Leser-Liste pflegen (ohne Zählung)
-        if sender_id not in reader_ids:
+            # Kein Limit: nur Leser-Liste pflegen
             await bottles.update_one(
                 {"bottle_id": bottle_id},
                 {"$addToSet": {"reader_ids": sender_id}}
             )
-
 
     conv = await conversations.find_one({"bottle_id": bottle_id})
     if not conv:
@@ -399,7 +442,21 @@ async def send_reply(data: dict):
         {"conversation_id": conv_doc["conversation_id"]},
         {"$set": {"last_updated": now_local()}}
     )
-    return {"status": "success", "message": "Reply stored"}
+
+    sender_nick   = await nickname_of(sender_id)
+    receiver_nick = await nickname_of(receiver_id)
+ # Für’s FE: sofortiger Marker-Remove ohne Polling
+    curr = await bottles.find_one({"bottle_id": bottle_id}, projection={"readers_count":1,"max_readers":1,"is_full":1})
+    became_full = bool(curr and (curr.get("is_full") or (
+        curr.get("max_readers") is not None and (curr.get("readers_count") or 0) >= curr["max_readers"]
+    )))
+    return {"status": "success",
+            "message": "Reply stored", 
+            "bottle_full": became_full, 
+            "sender_id": sender_id,
+            "sender_nickname": sender_nick,       
+            "receiver_id": receiver_id,
+            "receiver_nickname": receiver_nick}
 
 @app.get("/conversation/{bottle_id}/messages")
 async def get_conversation_messages(bottle_id: str):
@@ -479,22 +536,6 @@ async def get_user_conversations(user_id: str):
         print(f"Error in get_user_conversations: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-""" @app.get("/conversation/{conversation_id}", response_model=ConversationResponse)
-def get_conversation(conversation_id: str):
-    convo = conversations.find_one({"conversation_id": conversation_id})
-    if not convo:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-
-    messages = list(messages.find(
-        {"conversation_id": conversation_id},
-        {"_id": 0, "sender_id": 1, "content": 1, "timestamp": 1}
-    ))
-    messages.sort(key=lambda x: x["timestamp"])  
-    return {
-        "conversation_id": conversation_id,
-        "participants": convo["participants"],
-        "messages": messages
-    } """
 
 def get_database() -> AsyncIOMotorDatabase:
     return db
@@ -540,6 +581,7 @@ async def get_conversation(conversation_id: str, db: AsyncIOMotorDatabase = Depe
             "timestamp": bottle.get("bottle_timestamp")
         }
     }
+
 
 
 # -----------------------------------------
@@ -592,23 +634,50 @@ async def nearby(lat: float, lon: float, radius: int = 5000):
     out: list[dict] = [] 
     """Alle aktuell gültigen Bottles im Umkreis (radius m)."""
     now = now_local()
-    cursor = bottles.find({
-    "location.lat": {"$exists": True},
-    "location.lon": {"$exists": True},
+    #cursor = bottles.find({
+    #"location.lat": {"$exists": True},
+    #"location.lon": {"$exists": True},
+    #"$or": [
+     #   { "max_readers": { "$exists": False } },   # kein Limit-Feld
+      #  { "max_readers": None },                   # explizit null/kein Limit
+       # { "$expr": {
+        #    "$lt": [
+         #       { "$ifNull": ["$readers_count", { "$size": { "$ifNull": ["$reader_ids", []] } }] },
+          #      { "$toInt": "$max_readers" }
+           # ]
+    #    }}
+    #]
+#})
+
+   # optional: Bounding-Box für Performance (Radius in m -> grob in Grad)
+    radius_km = radius / 1000.0
+    deg = radius_km / 111.32
+    query = {
+    # nur gültige/antwortbare Bottles
+    "status": "floating",
+    "reply_enabled": True,   
+    "is_full": {"$ne": True},
+    "visible_until": {"$gt": now},
+
+    # Positionsfelder vorhanden (und optional: Bounding Box)
+    "location.lat": {"$exists": True, "$gte": lat - deg, "$lte": lat + deg},
+    "location.lon": {"$exists": True, "$gte": lon - deg, "$lte": lon + deg},
+
+    # Leser-Limit: nur zeigen, wenn nicht voll
     "$or": [
-        { "max_readers": { "$exists": False } },   # kein Limit-Feld
-        { "max_readers": None },                   # explizit null/kein Limit
-        { "$expr": {
-            "$lt": [
-                { "$ifNull": ["$readers_count", { "$size": { "$ifNull": ["$reader_ids", []] } }] },
-                { "$toInt": "$max_readers" }
+        {"max_readers": {"$exists": False}},
+        {"max_readers": None},
+        {
+            "$expr": { 
+                "$lt": ["$readers_count", "$max_readers"]}}
             ]
-        }}
-    ]
-})
+        }
 
-      
-
+    projection = {
+        "bottle_id": 1, "sender_id": 1, "content": 1, "tags": 1, "location": 1, "max_readers": 1, "readers_count": 1, "reader_ids": 1,
+    "status": 1, "reply_enabled": 1,"is_full": 1,"visible_until": 1, "visible_for_min": 1,
+    }
+    cursor = bottles.find(query, projection)
     async for doc in cursor:
         loc = doc.get("location", {})
         if "lat" not in loc or "lon" not in loc:

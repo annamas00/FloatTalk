@@ -3,7 +3,7 @@ import { ref, nextTick, unref } from 'vue'
 import axios from 'axios'
 import { currentBottleSenderId, currentBottleId, messageList, selectedConversation, chatList, loadChatList } from './chatLogic'
 import { toRaw } from 'vue'
-import { closeDetailModal as closeAllDetailModal } from './allBottlesLogic'
+import { closeDetailModal as closeAllDetailModal, allBottles } from './allBottlesLogic'
 //import { showReplySuccessModal } from './throwBottleLogic'
 
 
@@ -13,8 +13,12 @@ export const replyContent = ref('')
 //merken, zu welchem Bottle wir replyen
 //export const currentBottleId = ref(null)
 export const messageHistory = ref([])
-export const userId = localStorage.getItem('user_id')
+//export const userId = localStorage.getItem('user_id')
 export const showReplySuccessModal = ref(false)  
+export function getUserId() {
+  return localStorage.getItem('user_id') || ''
+}
+
 
 const API_BASE = import.meta.env?.VITE_API_BASE || 'http://localhost:8000'
 
@@ -37,7 +41,7 @@ export function cancelReply({ keepBottle = false } = {}) {
 
 
 function moveConversationToTop(conversationId, content) {
-  
+  const me = getUserId()
     console.log('🧪 selectedConversation:', conversationId)
 console.log('📋 chatList:', chatList.value.map(c => c.conversation_id))
   const index = chatList.value.findIndex(c => c.conversation_id === conversationId)
@@ -46,7 +50,7 @@ console.log('📋 chatList:', chatList.value.map(c => c.conversation_id))
 
     // Letzte Nachricht aktualisieren
     convo.last_message = {
-      sender_id: userId,
+      sender_id: me,
       content: content,
       timestamp: new Date().toISOString()
     }
@@ -74,8 +78,11 @@ async function refreshBottle(bottle) {
 //reply for bottle
 export async function sendReply(selectedAllBottle) {
   console.log('Sending reply:', replyContent.value)
-console.log('selectedAllBottle:', selectedAllBottle)
-console.log('selectedAllBottle keys:', Object.keys(toRaw(selectedAllBottle)))
+  console.log('selectedAllBottle:', selectedAllBottle)
+  if (selectedAllBottle) {
+  console.log('selectedAllBottle keys:', Object.keys(toRaw(selectedAllBottle)))
+ }
+  const me = getUserId()
   if (!selectedAllBottle ) {
     console.error('❌ Missing required selectedAllBottle fields')
     return
@@ -88,69 +95,124 @@ console.log('selectedAllBottle keys:', Object.keys(toRaw(selectedAllBottle)))
     console.error('❌ Missing required reply fields')
     return
   }
+
+  const content = replyContent.value?.trim()
+  if (!content) return
+
   try {
-    const response = await axios.post('http://localhost:8000/reply', {
+    const response = await axios.post(`${API_BASE}/reply`, {
 
       bottle_id: selectedAllBottle.bottle_id,
-      sender_id: userId,     
+      sender_id: me,     
       receiver_id:selectedAllBottle.sender_id,  
-      content: replyContent.value,
+      content,
       reply_to: null
     })
+    const data = response.data || {};
 
-    console.log('✅ Reply sent:', response.data)
 
-     if (response.data?.status === 'success') {
+    console.log('✅ Reply sent:', data)
+
+    if (data?.status !== 'success') {
+      const msg = data?.message || ''
+      // TTL abgelaufen → sofort entfernen + schließen
+      if (/expired/i.test(msg)) {
+        allBottles.value = allBottles.value.filter(b => b.bottle_id !== selectedAllBottle.bottle_id)
+        closeAllDetailModal()
+        window.dispatchEvent(new CustomEvent('refresh-bottles'))
+        alert('⏰ This bottle has expired.')
+        return
+      }
+      // Limit erreicht
+      if (/max(imum)? number of readers|Limit.*reached/i.test(msg)) {
+        allBottles.value = allBottles.value.filter(b => b.bottle_id !== selectedAllBottle.bottle_id)
+        closeAllDetailModal()
+        window.dispatchEvent(new CustomEvent('refresh-bottles'))
+        alert('🚫 Limit reached: no more replies allowed.')
+        return
+      }
+      if (data?.status === 'texterror') {
+        alert('❌ ' + msg)
+        return
+      }
+      alert('❌ ' + (msg || 'Failed to send reply.'))
+      return
+    }
+
 
     cancelReply()
-     await nextTick()
+    await nextTick()
     closeAllDetailModal()   
-     await nextTick()
+    await nextTick()
     showReplySuccessModal.value = true
     console.log('✅ Setting showReplySuccessModal to TRUE now!')  
     await loadChatList()
     await nextTick() 
     // 🔍 Suche passende Konversation (falls vorhanden)
-    const matchingConversation = chatList.value.find(c =>
-      c.bottle_id === selectedAllBottle.bottle_id &&
-      c.participants.includes(userId) &&
-      c.participants.includes(selectedAllBottle.sender_id)
-    )
+    const matchingConversation = chatList.value.find(c =>{
+       const ids = (c.participants || []).map(p => p.user_id ?? p)
+      return c.bottle_id === selectedAllBottle.bottle_id &&
+             ids.includes(String(me)) &&
+             ids.includes(String(selectedAllBottle.sender_id))
+    })
+      //c.bottle_id === selectedAllBottle.bottle_id &&
+      //c.participants.includes(userId) &&
+      //c.participants.includes(selectedAllBottle.sender_id))
 
     if (matchingConversation) {
-      try {moveConversationToTop?.(matchingConversation.conversation_id, replyContent.value);} catch{}
+      try {moveConversationToTop?.(matchingConversation.conversation_id, content);} catch{}
       selectedConversation.value = matchingConversation.conversation_id;
       // showChatModal.value = true
       // showChatDetailModal.value = true
-    }  return;} 
-      
-      // Fehlermeldungen der API (inkl. Limit)
-      const msg = response.data?.message || 'Failed to send reply.';
-      if (/max(imum)? number of readers|Max readers reached/i.test(msg)) {
-        alert('Limit erreicht: Für diese Bottle sind keine weiteren Antworten möglich.');
-        await refreshBottle(selectedAllBottle);
-        await loadNearbyBottles();
-      } else if (/already replied/i.test(msg)) {
-        // Darf weiterchatten, zählt nur nicht erneut
-        alert('Hinweis: Du hast bereits geantwortet – die Antwort zählt nicht erneut.')
-        await refreshBottle(selectedAllBottle);
-      } else {
-        alert(msg);
-      }
+    }  
+// Sofortiges Entfernen bei voller Bottle (vom Backend signalisiert)
+    if (data?.bottle_full) {
+      allBottles.value = allBottles.value.filter(b => b.bottle_id !== selectedAllBottle.bottle_id)
+      window.dispatchEvent(new CustomEvent('refresh-bottles'))
+      return
     }
-  catch (err) {
-    const apiMsg = err?.response?.data?.message;
-    if (/max(imum)? number of readers|Max readers reached/i.test(apiMsg)) {
-      alert('Limit erreicht: Für diese Bottle sind keine weiteren Antworten möglich.');
-      await refreshBottle(selectedAllBottle);
-       await loadNearbyBottles();
-      return;
-    }
-    
-    console.error('❌ Reply failed:', err);
-    alert(apiMsg || 'Failed to send reply.');
-  }
+
+    // 🔁 Vorsichtige lokale Aktualisierung (nur wenn ich NICHT Owner bin)
+    const isOwner = String(me) === String(selectedAllBottle.sender_id)
+    if (!isOwner) {
+      const max = Number(selectedAllBottle?.max_readers ?? 0)
+      const prevCount = Number(
+        selectedAllBottle?.readers_count ??
+        (selectedAllBottle?.reader_ids?.length ?? 0)
+      )
+      const meStr = String(me)
+      const list  = Array.isArray(selectedAllBottle.reader_ids)? selectedAllBottle.reader_ids.map(String): []
+      const already = list.includes(meStr)
+      const nextCount = already ? prevCount : prevCount + 1
+
+  if (Number.isFinite(max) && max > 0 && nextCount >= max) {
+    // Sofort aus UI entfernen → Marker weg
+    allBottles.value = allBottles.value.filter(
+      b => b.bottle_id !== selectedAllBottle.bottle_id);
+    // 🔁 Karte zusätzlich serverseitig neu laden lassen
+    window.dispatchEvent(new CustomEvent('refresh-bottles'));
+    return;
+  } else 
+    // vorsichtig lokal hochzählen (nur wenn ich noch nicht gezählt war)
+    if (!already) {
+        selectedAllBottle.readers_count = nextCount
+      selectedAllBottle.reader_ids = [...list, meStr]
+    } 
+  } 
 } 
+  catch (err) {
+    const apiMsg = err?.response?.data?.message || ''
+    if (/expired/i.test(apiMsg) || /max(imum)? number of readers|Limit.*reached/i.test(apiMsg)) {
+      allBottles.value = allBottles.value.filter(b => b.bottle_id !== selectedAllBottle.bottle_id)
+      closeAllDetailModal()
+      window.dispatchEvent(new CustomEvent('refresh-bottles'))
+      alert(apiMsg || 'Reply not possible.')
+      return
+    }
+    console.error('❌ Reply failed:', err)
+    alert(apiMsg || 'Failed to send reply.')
+  }
+  }
 
 
 
@@ -184,6 +246,8 @@ console.log('🧪 currentBottleId.value in replyLogic:', currentBottleId.value)
   console.log('Sending reply:', replyContent.value)
   console.log('Sending reply to bottle:', currentBottleId)
   console.log('Reply content:', replyContent.value)
+  
+    const me = getUserId()
   if (!currentBottleId.value) {
     console.error('❌ currentBottleId is missing or null')
     alert('⚠️ Kein Bottle gewählt')
@@ -197,29 +261,32 @@ console.log('🧪 currentBottleId.value in replyLogic:', currentBottleId.value)
   }
 
   try {
-    const response = await axios.post('http://localhost:8000/reply', {
+    const response = await axios.post(`${API_BASE}/reply`, {
       bottle_id: currentBottleId.value,
-      sender_id: userId,     
+      sender_id: me,     
       receiver_id: receiverId,  
       //content: replyContent.value,
       content,
       reply_to: null
     })
 
-    console.log('✅ Reply sent:', response.data)
-        if (response.data?.status === 'error') {
-      alert('❌ Serverfehler: ' + response.data.message)
-      return
-    }else if(response.data?.status === 'texterror') {
-      alert('❌ Text error: ' + response.data.message)
+   const data   = response.data || {}
+    console.log('✅ Reply sent:', data)
+    const status = String(data.status || '').toLowerCase()
+    const msg    = data.message || ''
+
+      if (status !== 'success') {
+      if (/expired/i.test(msg)) { alert('⏰ Bottle expired.'); return }
+      if (/max(imum)? number of readers|limit.*reached/i.test(msg)) { alert('🚫 Limit reached.'); return }
+      if (status === 'texterror') { alert('❌ ' + msg); return }
+      alert('❌ ' + (msg || 'Failed to send reply.'))
       return
     }
-    //alert('Reply sent successfully!')
 
     messageList.value.push({
-  sender_id: userId,
-  sender_nickname: 'You',
-  content: content,
+  sender_id: me,
+  sender_nickname: data.sender_nickname || localStorage.getItem('nickname') || localStorage.getItem('username') || me,
+  content,
   timestamp: new Date().toISOString()
 })
 await nextTick()
@@ -238,7 +305,10 @@ if (el) {
 await scrollToBottom(chatMessages)
 cancelReply({ keepBottle: true })
 moveConversationToTop(selectedConversation.value, content)
-
+// Bei voller Bottle ggf. Karte refreshen
+    if (data?.bottle_full) {
+      window.dispatchEvent(new CustomEvent('refresh-bottles'))
+    }
   } catch (err) {
     console.error('❌ Reply failed:', err)
     alert('Failed to send reply.')
