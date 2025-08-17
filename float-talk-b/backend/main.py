@@ -245,6 +245,15 @@ async def add_bottle(req: Request):
 
     now = now_local()
     visible_until = now + timedelta(minutes=ttl_minutes)
+    
+    raw_vis = data.get("visibility_km", 5)
+    try:
+        visibility_km = float(raw_vis)
+        if visibility_km < 1: visibility_km = 1.0
+        if visibility_km > 10: visibility_km = 10.0
+    except (TypeError, ValueError):
+        visibility_km = 5.0
+
 
     raw_max = data.get("max_readers")
     try:
@@ -265,7 +274,7 @@ async def add_bottle(req: Request):
         "picked_at": None,
         "reply_enabled": True,
         "city": data.get("city", ""),
-        "visibility_km": data.get("visibility_km", 5),
+        "visibility_km": visibility_km,
         "max_readers": max_readers,
         "reader_ids": [],
         "readers_count": 0,
@@ -675,7 +684,7 @@ async def nearby(lat: float, lon: float, radius: int = 5000):
 
     projection = {
         "bottle_id": 1, "sender_id": 1, "content": 1, "tags": 1, "location": 1, "max_readers": 1, "readers_count": 1, "reader_ids": 1,
-    "status": 1, "reply_enabled": 1,"is_full": 1,"visible_until": 1, "visible_for_min": 1,
+    "status": 1, "reply_enabled": 1,"is_full": 1,"visible_until": 1, "visible_for_min": 1, "visibility_km": 1, 
     }
     cursor = bottles.find(query, projection)
     async for doc in cursor:
@@ -684,8 +693,12 @@ async def nearby(lat: float, lon: float, radius: int = 5000):
             continue
 
         dist = _haversine(lat, lon, loc["lat"], loc["lon"])
-        if dist <= radius:
-            out.append(_doc_to_json(doc))
+        per_bottle_m = float(doc.get("visibility_km", 5)) * 1000.0
+
+        if dist <= radius and dist <= per_bottle_m:
+            d = _doc_to_json(doc)
+            d["distance_m"] = int(dist)      
+            out.append(d)
 
     return {"bottles": out}
 # ------------------ Start ------------------

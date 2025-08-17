@@ -931,6 +931,20 @@ onMounted(async () => {
         .bindPopup('📍 Your Location')
         .openPopup()
 
+const R_EARTH = 6371000
+function destination(lat, lon, distanceM, bearingDeg) {
+  const δ = distanceM / R_EARTH, θ = bearingDeg * Math.PI/180
+  const φ1 = lat * Math.PI/180, λ1 = lon * Math.PI/180
+  const sinφ1 = Math.sin(φ1), cosφ1 = Math.cos(φ1)
+  const sinδ = Math.sin(δ), cosδ = Math.cos(δ)
+  const sinφ2 = sinφ1*cosδ + cosφ1*sinδ*Math.cos(θ)
+  const φ2 = Math.asin(sinφ2)
+  const y = Math.sin(θ)*sinδ*cosφ1, x = cosδ - sinφ1*sinφ2
+  const λ2 = λ1 + Math.atan2(y, x)
+  return [φ2*180/Math.PI, ((λ2*180/Math.PI + 540)%360) - 180]
+}
+
+
       // Inner circle (5km)
       const whiteCircle = L.circle([lat, lon], {
         radius: 5000,
@@ -939,6 +953,23 @@ onMounted(async () => {
         fillOpacity: 1,
         weight: 2
       }).addTo(mapInstance)
+
+      const center = whiteCircle.getLatLng()
+const radiusM = whiteCircle.getRadius()
+const radiusKm = Math.round(radiusM / 1000)
+
+// 5km Label
+const [lblLat, lblLon] = destination(center.lat, center.lng, radiusM * 1.02, 0)
+
+L.marker([lblLat, lblLon], {
+  icon: L.divIcon({
+    className: 'radius-label',
+    html: `<div class="radius-chip">${radiusKm} km</div>`,
+    iconSize: [0, 0],
+    iconAnchor: [0, 0]
+  }),
+  interactive: false
+}).addTo(mapInstance)
 
       // World polygon
       const world = turf.polygon([
@@ -1104,7 +1135,7 @@ async function loadNearbyBottles() {
   if (userLat.value == null || userLon.value == null) return
   const res = await axios.get(
     `${API_BASE}/nearby_bottles`,
-    { params: { lat: userLat.value, lon: userLon.value, radius: 5000 } }
+    { params: { lat: userLat.value, lon: userLon.value, radius: 10000 } }
   )
   allBottles.value = res.data.bottles       
 }
@@ -1914,6 +1945,33 @@ h3 {
 @media (min-width: 769px) {
   .only-mobile {
     display: none !important;
+  }
+}
+
+/* 5km Text */
+:deep(.radius-label.leaflet-div-icon) {
+  background: transparent !important;
+  border: 0 !important;
+  width: 0 !important;     
+  height: 0 !important;
+  box-shadow: none !important;
+}
+:deep(.radius-chip) {
+  background: transparent !important; 
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  color: #111827;
+  font-size: 30px;
+  white-space: nowrap; 
+  font-weight: 600;
+  transform: translate(100px, -40px);
+}
+@media (max-width: 768px) {
+  :deep(.radius-chip) {
+    font-size: 20px;           
+    transform: translate(60px, -24px); 
   }
 }
 </style>
