@@ -46,9 +46,6 @@
 </template>
 
 
-
-
-
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
@@ -61,19 +58,7 @@ const router = useRouter()
 const firstName = ref('')
 const lastName = ref('')
 const nickname = ref('')
-
-
-
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
-
-function capitalizeWords(str) {
-  return str
-    .toLocaleLowerCase('de-DE') // erst alles klein (inkl. Ü → ü)
-    .replace(/\b\p{L}+/gu, (word) =>
-      word.charAt(0).toLocaleUpperCase('de-DE') + word.slice(1)
-    )
-}
-
 
 
 async function handleLogin() {
@@ -84,11 +69,10 @@ async function handleLogin() {
       password: password.value
     }))
     const token = res.data.access_token
-    localStorage.setItem('token', token)
-
-     localStorage.removeItem('userLat')
-    localStorage.removeItem('userLon')
-     localStorage.removeItem('userLocationText')
+        localStorage.setItem('token', token)
+        localStorage.removeItem('userLat')
+        localStorage.removeItem('userLon')
+        localStorage.removeItem('userLocationText')
 
     //get user id
     const meRes = await axios.get(`${API_BASE}/me`, {
@@ -99,45 +83,41 @@ async function handleLogin() {
     const { user_id, nickname } = meRes.data
     localStorage.setItem('user_id', user_id)
     localStorage.setItem('nickname', nickname)
+    
+    
+    // after successful login start localization
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude         
+        const lon = pos.coords.longitude
+        localStorage.setItem('userLat', lat)
+        localStorage.setItem('userLon', lon)
 
-
-     // 📍 Nach erfolgreichem Login: Standortabfrage starten
-        navigator.geolocation.getCurrentPosition(
-  async (pos) => {
-    const lat = pos.coords.latitude          // volle Präzision
-    const lon = pos.coords.longitude
-    localStorage.setItem('userLat', lat)
-    localStorage.setItem('userLon', lon)
-
-    // ➕ Reverse-Geocoding durchführen
+    //Reverse-Geocoding 
     try {
-      const res = await fetch(`${API_BASE}/api/reverse?lat=${lat}&lon=${lon}`)
-                         .then(r => r.json())
-      const data = await res.json()
+      const data = await fetch(`${API_BASE}/api/reverse?lat=${lat}&lon=${lon}`).then(r => r.json())
       const address = data.address || {}
+      const country = a.country || ''  
       const road = address.road || ''
       const cityName = address.city || address.town || address.village || ''
-
-      const locationText = road
-        ? `${capitalizeWords(road)}, ${capitalizeWords(cityName)}`
-        : capitalizeWords(cityName)
+      const houseNumber = address.house_number || ''
+      const locationText= road ? `${road}${houseNumber ? ' ' + houseNumber : ''}, ${cityName}, ${country}`
+      : `${cityName}, ${country}`
 
       localStorage.setItem('userLocationText', locationText)
-      alert('📍 Location successfully determined!') // ✅ Neue Erfolgsmeldung
+      alert('📍 Location successfully determined!') 
     } catch (e) {
       console.warn('Reverse-Geocoding failed:', e)
     }
-
+    
     router.push('/home')
   },
       (err) => {
-  console.warn('❌ Location determination failed:', err)
-  alert('❌ Location determination failed. Please allow access or reload the page..')
-  // Kein Redirect – Nutzer bleibt auf Login-Seite
-},
+        console.warn('❌ Location determination failed:', err)
+        alert('❌ Location determination failed. Please allow access or reload the page..')
+      },
       { enableHighAccuracy: true, timeout: 10000 }
     )
-    
     alert('✅ Login successful!')
   } catch (err) {
     alert('❌ Login failed!')
@@ -145,21 +125,6 @@ async function handleLogin() {
   }
 }
 
-/* onMounted(() => {
-    // Jedes Mal Standort abfragen, auch bei wiederholtem Aufruf
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      const coords = {
-        lat: pos.coords.latitude,
-        lon: pos.coords.longitude
-      }
-      localStorage.setItem('coords', JSON.stringify(coords))
-    },
-    () => {
-      showManualInput.value = true
-    }
-  )
-}) */
 
 onMounted(() => {
   const token = localStorage.getItem('token')
@@ -167,19 +132,12 @@ onMounted(() => {
     router.push('/home')
     return
   }
-
-  // Clear login state just in case
-  email.value = ''
-  password.value = ''
-  isLogin.value = true
 })
-
-
 
 
 async function handleRegister() {
   try {
-    await axios.post('http://localhost:8000/register', {
+    await axios.post(`${API_BASE}/register`, {
       email: email.value,
       password: password.value,
       first_name: firstName.value,
@@ -194,6 +152,7 @@ async function handleRegister() {
   }
 }
 </script>
+
 
 <style>
 
@@ -210,7 +169,6 @@ async function handleRegister() {
   animation: fadeIn 0.5s ease forwards;
   transform: scale(0.95);
   opacity: 0;
-  padding: 2.5rem 2rem;
 }
 
 @keyframes fadeIn {
@@ -312,8 +270,8 @@ button[type='submit']:hover {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;         /* full viewport height */
-  background-color: #f9fafb; /* optional background */
+  height: 100vh;        
+  background-color: #f9fafb; 
   margin: 0;
 }
 

@@ -4,7 +4,6 @@ import axios from 'axios'
 import { currentBottleSenderId, currentBottleId, messageList, selectedConversation, chatList, loadChatList } from './chatLogic'
 import { toRaw } from 'vue'
 import { closeDetailModal as closeAllDetailModal, allBottles } from './allBottlesLogic'
-//import { showReplySuccessModal } from './throwBottleLogic'
 
 
 // Reply state

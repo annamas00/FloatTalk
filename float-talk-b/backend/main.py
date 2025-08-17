@@ -189,26 +189,30 @@ async def create_anon_user():
 
 # ------------------ Bottles & Logs ------------------
 
-#LOCAL_TZ = ZoneInfo("Europe/Berlin")
+LOCAL_TZ = ZoneInfo("Europe/Berlin")
 
-
-
-def now_local():
+def now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
+def to_utc(dt: datetime) -> datetime:
+    # Macht jeden datetime sicher UTC-aware
+    if dt.tzinfo is None:
+        # falls dt lokal war: als Berlin interpretieren und nach UTC wandeln
+        dt = dt.replace(tzinfo=LOCAL_TZ)
+    return dt.astimezone(timezone.utc)
 
 
 @app.post("/log")
 async def log_event(entry: LogEntry):
     log = entry.dict()
-    log["timestamp"] = now_local().isoformat()
+    log["timestamp"] = now_utc()
     print("📥 Log received:", log)
     await logs.insert_one(log)
     return {"status": "logged"}
 
 @app.get("/bottles")
 async def get_valid_bottles():
-    now = now_local().isoformat()
+    now = now_utc()
     cursor = logs.find({
         "action": "bottle_thrown",
         "details.duration_until": {"$gt": now}
@@ -243,7 +247,7 @@ async def add_bottle(req: Request):
     except (TypeError, ValueError):
         ttl_minutes = 60
 
-    now = now_local()
+    now = now_utc()
     visible_until = now + timedelta(minutes=ttl_minutes)
     
     raw_vis = data.get("visibility_km", 5)
@@ -266,7 +270,7 @@ async def add_bottle(req: Request):
         "sender_id": data["sender_id"],
         "content": content,
         "type": data.get("type", "text"),
-        "bottle_timestamp": now_local(),
+        "bottle_timestamp": now_utc(),
         "status": "floating",
         "tags": data.get("tags", []),
         "location": data.get("location", {}),
@@ -339,7 +343,7 @@ async def send_reply(data: dict):
         return {"status": "error", "message": "Missing required fields"}
     
     
-    now = now_local()
+    now = now_utc()
       # Bottle laden
     bottle = await bottles.find_one(
     {"bottle_id": bottle_id},
@@ -413,8 +417,8 @@ async def send_reply(data: dict):
             "conversation_id": f"conv_{bottle_id}",
             "bottle_id": bottle_id,
             "participants": [sender_id, receiver_id],
-            "created_at": now_local(),
-            "last_updated": now_local(),
+            "created_at": now_utc(),
+            "last_updated": now_utc(),
             "status": "active",
             "reply_enabled": True
         }
@@ -428,28 +432,28 @@ async def send_reply(data: dict):
                     "participants": {"$each": [sender_id, receiver_id]}
                 },
                 "$set": {
-                    "last_updated": now_local()
+                    "last_updated": now_utc()
                 }
             }
         )
        conv_doc = await conversations.find_one({"_id": conv["_id"]}) 
        
     message = {
-        "message_id": f"msg_{int(now_local().timestamp())}",
+        "message_id": f"msg_{int(now_utc().timestamp())}",
         "conversation_id": conv_doc["conversation_id"],
         "bottle_id": bottle_id,
         "sender_id": sender_id,
         "receiver_id": receiver_id,
         "content": content,
         "type": "text",
-        "timestamp": now_local(),
+        "timestamp": now_utc(),
         "status": "sent",
         "reply_to": None
     }
     await messages.insert_one(message)
     await conversations.update_one(
         {"conversation_id": conv_doc["conversation_id"]},
-        {"$set": {"last_updated": now_local()}}
+        {"$set": {"last_updated": now_utc()}}
     )
 
     sender_nick   = await nickname_of(sender_id)
@@ -642,22 +646,8 @@ def _doc_to_json(doc: dict) -> dict:
 async def nearby(lat: float, lon: float, radius: int = 5000):
     out: list[dict] = [] 
     """Alle aktuell gültigen Bottles im Umkreis (radius m)."""
-    now = now_local()
-    #cursor = bottles.find({
-    #"location.lat": {"$exists": True},
-    #"location.lon": {"$exists": True},
-    #"$or": [
-     #   { "max_readers": { "$exists": False } },   # kein Limit-Feld
-      #  { "max_readers": None },                   # explizit null/kein Limit
-       # { "$expr": {
-        #    "$lt": [
-         #       { "$ifNull": ["$readers_count", { "$size": { "$ifNull": ["$reader_ids", []] } }] },
-          #      { "$toInt": "$max_readers" }
-           # ]
-    #    }}
-    #]
-#})
-
+    now = now_utc()
+    
    # optional: Bounding-Box für Performance (Radius in m -> grob in Grad)
     radius_km = radius / 1000.0
     deg = radius_km / 111.32

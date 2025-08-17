@@ -64,7 +64,7 @@
                   <p class="dialog-tags">
                     <CalendarFold class="w-4 h-4" />
                     <!--{{  formatDate(bottle.timestamp)}} -->
-                    {{ new Date(new Date(bottle.timestamp).getTime() + 2 * 60 * 60 * 1000).toLocaleString() }}
+                    {{ new Date(new Date(bottle.timestamp).getTime()).toLocaleString() }}
                   </p>
 
                   <div class="dialog-tags">
@@ -299,24 +299,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Dropdown toggle button -->
-
-        <!--   <div class="w-full mt-4">
-          <button @click="toggleDropdown" class="btn-action w-full flex justify-between items-center">
-            <span>my Bottles</span>
-            <span>{{ dropdownOpen ? '▲' : '▼' }}</span>
-          </button>
-
-          <div v-if="dropdownOpen" class="dropdown-list">
-            <div v-for="(bottle, index) in myBottles" :key="index" class="dropdown-item"
-              @click="viewBottleDetail(bottle)">
-              {{ bottle.content.slice(0, 20) }}...
-            </div>
-          </div>
-        </div> -->
-
-
       </div>
       <div class="icon">
         <Waves class="w-5 h-5" />
@@ -366,7 +348,7 @@
             <div class="chat-info-wrapper">
               <p class="dialog-tags">
                 <CalendarFold class="w-4 h-4" />
-                {{ new Date(new Date(bottle.timestamp).getTime() + 2 * 60 * 60 * 1000).toLocaleString() }}
+                {{ new Date(new Date(bottle.timestamp).getTime()).toLocaleString() }}
               </p>
 
               <div class="dialog-tags">
@@ -725,7 +707,6 @@ function handleSendReply() {
   })
 }
 
-console.log('🟢 handleSendReply ist sichtbar:', typeof handleSendReply)
 
 const bottleIcon = L.icon({
   iconUrl: bottleIconUrl,
@@ -787,12 +768,8 @@ onMounted(() => {
 import {
   selectedBottle as selectedAllBottle,
   allDetailVisible,
-  showBottle,
   closeDetailModal as closeAllDetailModal,
   allBottles,
-  //fetchAllBottles,
-  allDropdownOpen,
-  toggleAllDropdown
 } from './allBottlesLogic.js'
 
 onMounted(() => {
@@ -819,8 +796,7 @@ import {
 
 
 import {
-  useChatLogic,
-
+  useChatLogic
 } from './chatLogic.js'
 
 
@@ -1053,17 +1029,6 @@ watch(isMobile, async () => {
 })
 
 
-
-
-console.log('🧪 showReplySuccessModal at mount:', showReplySuccessModal.value)
-
-
-
-function formatTimestamp(ts) {
-  if (!ts) return ''
-  return new Date(ts).toLocaleString()
-}
-
 const map = ref(null)
 let mapInstance = null
 let markers = []
@@ -1074,7 +1039,6 @@ L.Icon.Default.mergeOptions({
   iconUrl: markerIcon,
   shadowUrl: markerShadow,
 })
-
 
 
 
