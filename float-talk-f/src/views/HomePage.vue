@@ -739,8 +739,6 @@ const API_BASE =
 
 
 const isAutoDetected = ref(false)
-//const visibilityKm = ref(5)
-//const maxReaders = ref(null)
 const showMyBottleModal = ref(false)
 const chatMessagesRef = ref(null)
 
@@ -857,16 +855,28 @@ onMounted(async () => {
     return
   }
 
+  
+
+
   // Initialize Leaflet map
-  if (!mapInstance) {
-    mapInstance = L.map(mapContainer).setView([48.1351, 11.5820], 13)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(mapInstance)
-    map.value = mapInstance
-  } else {
-    console.warn('⚠️ Map is already initialized')
-  }
+if (!mapInstance) {
+  mapInstance = L.map(mapContainer, {
+    minZoom: 2,
+    maxZoom: 24,     // OSM geht i. d. R. bis 19
+    zoomSnap: 0.5,   // ← halbe Zoomstufen erlauben (oder 0.25 für noch feiner)
+    zoomDelta: 1.0   // ← +/- Buttons springen in 0.5er-Schritten
+  }).setView([48.1351, 11.5820], 13.5) 
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 24,
+    detectRetina: true
+  }).addTo(mapInstance)
+
+  map.value = mapInstance
+} else {
+  console.warn('⚠️ Map is already initialized')
+}
 
   // Ensure tiles render after layout
   setTimeout(() => {
@@ -970,6 +980,15 @@ L.marker([lblLat, lblLon], {
   }),
   interactive: false
 }).addTo(mapInstance)
+
+//center view after login / change
+setTimeout(() => {
+  mapInstance.invalidateSize(); 
+  mapInstance.fitBounds(whiteCircle.getBounds(), {
+    padding: [40, 40] })
+    const targetZoom = 13.5    
+    mapInstance.setView(whiteCircle.getLatLng(), targetZoom)          
+  });
 
       // World polygon
       const world = turf.polygon([
