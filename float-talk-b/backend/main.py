@@ -412,12 +412,38 @@ async def send_reply(data: dict):
                 {"$addToSet": {"reader_ids": sender_id}}
             )
 
-    conv = await conversations.find_one({"bottle_id": bottle_id})
+
+    bottle = await bottles.find_one({"bottle_id": bottle_id}, {"sender_id": 1})
+    if not bottle:
+        raise HTTPException(status_code=404, detail="Bottle not found")
+
+    owner_id = bottle["sender_id"]
+    me = sender_id
+
+    other = receiver_id if me == owner_id else owner_id
+
+
+    # für 1v1 private chat
+    pair = sorted([sender_id, receiver_id])
+    pair_key = f"{pair[0]}:{pair[1]}"
+
+    # such chat nach (bottle_id, pair_key)
+    conv = await conversations.find_one({
+    "bottle_id": bottle_id,
+    "pair_key": pair_key,                 
+    "participants": {"$all": pair},       
+    "$expr": {"$eq": [{"$size": "$participants"}, 2]}  
+    })
+
+
+
     if not conv:
         conv_doc = {
-            "conversation_id": f"conv_{bottle_id}",
+            "conversation_id": f"conv_{bottle_id}_{pair_key}",
             "bottle_id": bottle_id,
-            "participants": [sender_id, receiver_id],
+            "pair_key": pair_key,         
+            "participants": pair, 
+            #"participants": [sender_id, receiver_id],
             "created_at": now_utc(),
             "last_updated": now_utc(),
             "status": "active",
@@ -429,9 +455,7 @@ async def send_reply(data: dict):
        await conversations.update_one(
             {"_id": conv["_id"]},
             {
-                "$addToSet": {
-                    "participants": {"$each": [sender_id, receiver_id]}
-                },
+                
                 "$set": {
                     "last_updated": now_utc()
                 }
