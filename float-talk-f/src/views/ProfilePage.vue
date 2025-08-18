@@ -7,7 +7,6 @@
                 <label>Email</label>
                 <input type="text" :value="email" disabled />
             </div>
-
             <div class="form-group">
                 <label>Nickname</label>
                 <input type="text" v-model="nickname" />

@@ -129,7 +129,7 @@ export async function submitBottle(refreshNearby) {
         }, msLeft)
       }
     }
-
+    
     // refresh form
     showForm.value = false
     bottleContent.value = ''

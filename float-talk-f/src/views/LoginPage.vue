@@ -109,7 +109,6 @@ async function handleLogin() {
     } catch (e) {
       console.warn('Reverse-Geocoding failed:', e)
     }
-    
     router.push('/home')
   },
       (err) => {

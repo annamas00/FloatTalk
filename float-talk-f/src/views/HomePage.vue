@@ -508,9 +508,7 @@
     </div>
     <div v-if="showForm" class="form-modal">
       <div class="form-box2">
-
         <h3 class="text-lg font-bold mb-3">New Bottle</h3>
-
         <textarea v-model="bottleContent" placeholder="Write your message..." class="input mb-2"></textarea>
         <!-- taginpuit -->
         <div class="tag-input mb-2">
