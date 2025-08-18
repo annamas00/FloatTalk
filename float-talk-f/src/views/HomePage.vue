@@ -8,11 +8,13 @@
 
       <div class="function-button">
         <div class="flex-icon-group">
+          <p>{{ nickname }}</p>
           <button @click="$router.push('/profile')" class="btn-action">
             <div class="btn-inner">
               <UserCircle />
             </div>
           </button>
+          
           <button @click="prepareThrowForm" class="btn-action">
             <div class="btn-inner">
               <Send class="w-5 h-5" />
@@ -627,6 +629,11 @@ function handleSendReply() {
   })
 }
 
+const nickname = ref('')
+
+onMounted(() => {
+  nickname.value = localStorage.getItem('nickname') || 'Guest'
+})
 
 const bottleIcon = L.icon({
   iconUrl: bottleIconUrl,
