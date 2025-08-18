@@ -244,12 +244,21 @@
                <!-- Fall 1: Reply-Feld noch nicht offen -->
               <div class="dialog-reply mt-4">
                 <div v-if="!showReplyInput" class="flex justify-end">
+
+                  <!-- Fall 1.1: user own bottle -->
+                  <div v-if="selectedAllBottle?.sender_id === String(getUserId())" class="text-gray-600 text-sm">
+                      Your bottle
+                  </div>
+
+                  <!-- Fall 1.2: others bottle -->
+                   <div v-else class="flex justify-end">
                  <button class="btn-submit" @click="toggleReplyBox(selectedAllBottle?.bottle_id)" 
                  :disabled="selectedAllBottle?.max_readers > 0 && selectedAllBottle?.readers_count >= selectedAllBottle?.max_readers">Reply </button>
                  <div v-if="selectedAllBottle?.max_readers > 0 && selectedAllBottle?.readers_count >= selectedAllBottle?.max_readers"
                    class="text-red-500 text-sm mt-2">
                    Limit reached: no more replies allowed.
                   </div>
+                </div>
                 </div>
                 <!-- Fall 2: Reply-Feld offen -->
                 <div v-else>  
@@ -1121,7 +1130,7 @@ watch(
     <div style="max-width: 200px; font-size: 14px;">
       ${tagsDisplay}
       <br/>
-      <button onclick="window.replyToBottle('${b.bottle_id}')" style="margin-top: 6px; padding: 4px 8px; font-size: 13px; border-radius: 4px; background: #eee; border: 1px solid #ccc;">💬 Reply</button>
+      <button onclick="window.replyToBottle('${b.bottle_id}')" style="margin-top: 6px; padding: 4px 8px; font-size: 13px; border-radius: 4px; background: #eee; border: 1px solid #ccc;">💬 Read</button>
     </div>
   `)
 
