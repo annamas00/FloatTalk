@@ -1,14 +1,6 @@
-// myBottlesLogic.js
 import { ref } from 'vue'
-import axios from 'axios'  
-
-// Dropdown visibility state
-export const dropdownOpen = ref(false)
-export function toggleDropdown() {
-  dropdownOpen.value = !dropdownOpen.value
-}
-
-
+import axios from 'axios' 
+import { formatDate } from './chatLogic.js'
 
 // All bottles data
 export const myBottles = ref([])
@@ -17,15 +9,15 @@ export const myBottles = ref([])
 export const detailVisible = ref(false)
 export const selectedBottle = ref(null)
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
+
 // Fetch user bottles 
 export async function fetchMyBottles() {
   try {
-     const userId = localStorage.getItem('user_id')
-    const res = await axios.get('http://localhost:8000/my_bottles', {
-      
+    const userId = localStorage.getItem('user_id')
+    const res = await axios.get(`${API_BASE}/my_bottles`, {
       params: { user_id: userId}
     })
-    console.log('📥 Bottles loaded:', res.data.bottles)
     myBottles.value = res.data.bottles
   } catch (err) {
     console.error('❌ Failed to fetch bottles:', err)
@@ -37,7 +29,6 @@ export function viewBottleDetail(bottle) {
   console.log('🧾 Selected bottle:', bottle)
   selectedBottle.value = bottle
   detailVisible.value = true
-   showReplyInput.value = false 
 }
 
 // Close the detail modal
