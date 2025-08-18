@@ -1,8 +1,8 @@
 <template>
     <div class="profile-page">
         <div class="profile-card">
-                <router-link to="/home" class="back-button" title="Back to map">←</router-link>
-                <h2 class="profile-title">👤 My Profile</h2>
+            <router-link to="/home" class="back-button" title="Back to map">←</router-link>
+            <h2 class="profile-title">👤 My Profile</h2>
             <div class="form-group">
                 <label>Email</label>
                 <input type="text" :value="email" disabled />
@@ -28,7 +28,6 @@ import axios from 'axios'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
 const router = useRouter()
-
 const email = ref('')
 const nickname = ref('')
 
@@ -53,6 +52,7 @@ onMounted(async () => {
     }
 })
 
+//when updating profile
 async function updateProfile() {
     const token = localStorage.getItem('token')
     try {
@@ -67,6 +67,7 @@ async function updateProfile() {
     }
 }
 
+//for log out
 function logout() {
     localStorage.clear()
     alert('👋 Logged out.')
@@ -84,17 +85,17 @@ function logout() {
 }
 
 .profile-card {
-  position: relative;
-  background-color: white;
-  padding: 2.5rem 2rem;
-  border-radius: 1rem;
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.08);
-  width: 100%;
-  max-width: 340px;
-  text-align: center;
-  animation: fadeIn 0.5s ease forwards;
-  transform: scale(0.95);
-  opacity: 0;
+    position: relative;
+    background-color: white;
+    padding: 2.5rem 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 340px;
+    text-align: center;
+    animation: fadeIn 0.5s ease forwards;
+    transform: scale(0.95);
+    opacity: 0;
 }
 
 @keyframes fadeIn {
@@ -174,20 +175,19 @@ function logout() {
 
 .btn-secondary:hover {
     background-color: #be123c;
-    /* Rose-700 */
 }
 
 .back-button {
-  position: absolute;
-  top: 1.5rem;
-  left: 1.5rem;
-  font-size: 2rem;
-  color: black;
-  text-decoration: none;
-  transition: color 0.2s ease;
+    position: absolute;
+    top: 1.5rem;
+    left: 1.5rem;
+    font-size: 2rem;
+    color: black;
+    text-decoration: none;
+    transition: color 0.2s ease;
 }
 
 .back-button:hover {
-  color: #4338ca;
+    color: #4338ca;
 }
 </style>

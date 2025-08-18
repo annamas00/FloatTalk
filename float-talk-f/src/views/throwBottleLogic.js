@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import axios from 'axios'
-import { fetchMyBottles, myBottles } from './myBottlesLogic.js'
+import { fetchMyBottles } from './myBottlesLogic.js'
 import { getUserId } from './replyLogic.js'
 
 export const showForm = ref(false)
@@ -10,71 +10,37 @@ export const tagList = ref([])
 export const tagInput = ref('')
 export const city = ref('')
 export const showSuccessModal = ref(false)
-export const ttlMinutes = ref(60)
-export const maxReaders = ref(null) 
-export const visibilityKm = ref(5)
-
+export const ttlMinutes = ref(60)    //30, 60, 240, 1440
+export const maxReaders = ref(null)  //null = no limit
+export const visibilityKm = ref(5)   //1..10
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
-function capitalizeWords(str) {
-  return str
-    .toLocaleLowerCase('de-DE') // erst alles klein (inkl. Ü → ü)
-    .replace(/\b\p{L}+/gu, (word) =>
-      word.charAt(0).toLocaleUpperCase('de-DE') + word.slice(1)
-    )
-}
-
-
-
-
-export function showThrowBottleForm() {
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      localStorage.setItem('userLat', pos.coords.latitude)
-      localStorage.setItem('userLon', pos.coords.longitude)
-      reverseGeocode(pos.coords.latitude, pos.coords.longitude)
-      loadBottles()
-    },
-    () => {
-      // Fallback auf gespeicherte Werte
-      prepareThrowForm()
-    },
-    { enableHighAccuracy: true, timeout: 10000 }
-  )
-
-  showForm.value = true
-}
-
-
-// Reverse-Geocoding für automatische Standortermittlung
+// Reverse Geocoding for automatic localization
 async function reverseGeocode(lat, lon) {
   try {
     const res = await fetch(`${API_BASE}/api/reverse?lat=${lat}&lon=${lon}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-
-  const a = data.address || {}
-
-  const street   = [a.road, a.house_number].filter(Boolean).join(' ');
-    const locText  = [street, a.postcode, a.city || a.town || a.village, a.country]
-                      .filter(Boolean)
-                      .map(capitalizeWords)
-                      .join(', ');
+    const a = data.address || {}
+    const street = [a.road, a.house_number].filter(Boolean).join(' ');
+    const locText = [street, a.postcode, a.city || a.town || a.village, a.country]
+      .filter(Boolean)
+      .join(', ');
 
     // Update location + localStorage
     location.value = locText
-city.value = capitalizeWords(a.city || a.town || a.village || '')
+    city.value = (a.city || a.town || a.village || '')
     localStorage.setItem('userLocationText', locText)
     localStorage.setItem('userLat', lat)
     localStorage.setItem('userLon', lon)
 
-
   } catch (err) {
-    console.error('❌ Fehler beim Reverse Geocoding:', err)
+    console.error('❌ Error in Reverse Geocoding:', err)
   }
 }
 
+//adds tags 
 export function addTag() {
   const value = tagInput.value.trim()
   if (
@@ -83,22 +49,21 @@ export function addTag() {
     tagList.value.length < 5 // max tags
   ) {
     tagList.value.push(value)
-    console.log('✅ Tag added:', value)
-    } else {
+  } else {
     console.warn('⚠️ Tag NOT added. Value:', value)
   }
   tagInput.value = ''
 }
 
+//handles the key presses inside tag input field
+//If the user presses enter/space/comma a tag is added
 export function handleTagKeydown(e) {
-  console.log('🧪 key pressed:', e.key)
   const key = e.key
   if (
     (key === 'Enter' || key === ' ' || key === 'Space' || key === ',' || key === 'Comma') &&
     !e.isComposing
   ) {
     e.preventDefault()
-    console.log('addInputKey：', key)
     addTag()
   }
 }
@@ -107,12 +72,8 @@ export function removeTag(index) {
   tagList.value.splice(index, 1)
 }
 
+//submit a new bottle
 export async function submitBottle(refreshNearby) {
-  
-  console.log('content:', bottleContent.value)
-  console.log('tags:', tagList.value)
-  console.log('location:', location.value)
-
   const allowedTTLs = new Set([30, 60, 240, 1440])
   const ttl = Number(ttlMinutes?.value ?? 60)
   const ttlMinutesPayload = allowedTTLs.has(ttl) ? ttl : 60
@@ -126,44 +87,41 @@ export async function submitBottle(refreshNearby) {
   localStorage.setItem('lastBottleLat', storedLat)
   localStorage.setItem('lastBottleLon', storedLon)
 
-
-
   if (!bottleContent.value || !location.value) {
     console.warn('no locations')
-    
     return
   }
-if (maxReaders.value === 0) {
-  return // kein Senden
-}
-
+  //dont send bottle if in max readers entered 0
+  if (maxReaders.value === 0) {
+    return 
+  }
 
   try {
     const res = await axios.post(`${API_BASE}/add_bottle`, {
       bottle_id: "btl_" + Date.now(),
-      sender_id: getUserId(),        
+      sender_id: getUserId(),
       content: bottleContent.value,
       tags: tagList.value,
       location: storedLat && storedLon
-      ? {
+        ? {
           lat: parseFloat(storedLat),
           lon: parseFloat(storedLon),
-          address : location.value,
-      }
-      : JSON.parse(storedCoords),
+          address: location.value,
+        }
+        : JSON.parse(storedCoords),
       city: city.value,
       max_readers: maxReadersPayload,
       ttl_minutes: ttlMinutesPayload,
       visibility_km: visibilityKmPayload,
-      })
-    console.log('✅ Server response:', res.data)
+    })
 
-if (res.data.status === 'texterror') {
-    alert('❌ Text error: ' + res.data.message);
-    return;
-  }
+    if (res.data.status === 'texterror') {
+      alert('❌ Text error: ' + res.data.message);
+      return;
+    }
 
-  if (res.data.visible_until) {
+    //expiry time -> refresh list
+    if (res.data.visible_until) {
       const msLeft = new Date(res.data.visible_until).getTime() - Date.now()
       if (msLeft > 0) {
         setTimeout(() => {
@@ -175,75 +133,65 @@ if (res.data.status === 'texterror') {
     // refresh form
     showForm.value = false
     bottleContent.value = ''
-    showSuccessModal.value = true 
+    showSuccessModal.value = true
     location.value = ''
     tagList.value = []
     tagInput.value = ''
-    maxReaders.value = null  
+    maxReaders.value = null
     if (ttlMinutes) ttlMinutes.value = 60
     if (visibilityKm) visibilityKm.value = 5
     if (refreshNearby) {
       await refreshNearby()
     }
-       await fetchMyBottles() 
-console.log('🧪 Updated myBottles:', myBottles.value)
+    await fetchMyBottles()
     return res.data
   } catch (err) {
     console.error('❌ Submit failed:', err)
   }
-
-
 }
 
-
+//Prepares the "throw bottle" form by restoring a cached location if available or
+//  by reverse-geocoding stored coordinates
 export async function prepareThrowForm() {
-  
-  location.value = '' // alten Wert löschen
+  location.value = '' 
   city.value = ''
 
-  // 🔁 Zuerst versuchen, alten Standorttext wiederherzustellen
-const storedText = localStorage.getItem('userLocationText')
+  const storedText = localStorage.getItem('userLocationText')
   const storedLat = localStorage.getItem('userLat')
   const storedLon = localStorage.getItem('userLon')
   const storedCoords = localStorage.getItem('coords')
 
-
   if (storedText) {
-    // Wenn bereits formatierte Adresse vorhanden → verwenden
     location.value = storedText
   } else if (!isNaN(storedLat) && !isNaN(storedLon)) {
-    // Wenn Koordinaten einzeln vorhanden → reverse geocoding
     await reverseGeocode(storedLat, storedLon)
   } else if (storedCoords) {
-    // Wenn Koordinaten als Objekt vorhanden
     const { lat, lon } = JSON.parse(storedCoords)
     await reverseGeocode(lat, lon)
   }
-
   showForm.value = true
 }
 
 
-/* ---------- Haversine & Entfernungs-Check ---------- */
+// Haversine & distance Check
 export function canOpenBottle(bottle, userLat, userLon, radius = 50) {
   if (!bottle?.location) return false
   const { lat, lon } = bottle.location
   const toRad = deg => (deg * Math.PI) / 180
-  const R = 6371000          // Erdradius in m
+  const R = 6371000          // Earth radius in m
   const dLat = toRad(lat - userLat)
   const dLon = toRad(lon - userLon)
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos(toRad(userLat)) *
-      Math.cos(toRad(lat)) *
-      Math.sin(dLon / 2) ** 2
+    Math.cos(toRad(lat)) *
+    Math.sin(dLon / 2) ** 2
   const dist = 2 * R * Math.asin(Math.sqrt(a))
   return dist <= radius
 }
 
-/* ---------- Öffnen-Versuch ---------- */
+//open bottle
 export function openBottle(bottle, onSuccess) {
-  // onSuccess = Callback, das dein Dialog / Reply-Modal öffnet
   navigator.geolocation.getCurrentPosition(
     pos => {
       const near = canOpenBottle(
@@ -252,14 +200,14 @@ export function openBottle(bottle, onSuccess) {
         pos.coords.longitude
       )
       if (!near) {
-        alert('🚫 Du bist zu weit entfernt (~50 m Radius).')
+        alert('🚫 You are too far away.')
         return
       }
-      onSuccess && onSuccess(bottle)   // z. B. viewBottleDetail(bottle)
+      onSuccess && onSuccess(bottle) 
     },
     err => {
-      console.warn('Geolocation-Fehler:', err)
-      alert('Standort konnte nicht bestimmt werden.')
+      console.warn('Geolocation error:', err)
+      alert('Location couldnt be located.')
     },
     { enableHighAccuracy: true, timeout: 10000 }
   )

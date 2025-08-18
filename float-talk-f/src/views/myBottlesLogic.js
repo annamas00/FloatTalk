@@ -1,6 +1,5 @@
 import { ref } from 'vue'
 import axios from 'axios' 
-import { formatDate } from './chatLogic.js'
 
 // All bottles data
 export const myBottles = ref([])

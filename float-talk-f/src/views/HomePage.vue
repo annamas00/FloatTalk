@@ -30,22 +30,10 @@
               <Mails class="w-5 h-5" />
             </div>
           </button>
-
-
         </div>
-
-
-
-
       </div>
       <!-- user -->
       <div class="flex justify-center pb-4">
-        <!-- <div class="flex justify-center pb-4">
-          <router-link to="/profile" class="profile-btn" title="Profile">
-            <UserCircle class="w-7 h-7" />
-          </router-link>
-        </div> -->
-
 
         <!-- My Bottles Modal -->
         <div v-if="showMyBottleModal" class="form-modal">
@@ -57,41 +45,31 @@
             </div>
 
             <div class="mybottle-content">
-
               <div class="chat-button" v-for="bottle in myBottles" :key="bottle.bottle_id">
-
                 <div class="chat-info-wrapper">
                   <p class="dialog-tags">
                     <CalendarFold class="w-4 h-4" />
-                    <!--{{  formatDate(bottle.timestamp)}} -->
-                    {{ new Date(new Date(bottle.timestamp).getTime()).toLocaleString() }}
+                    {{ formatDate(bottle.timestamp) }}
                   </p>
-
                   <div class="dialog-tags">
                     <div v-if="bottle.tags?.length" class="flex items-center gap-1 text-sm text-gray-600">
                       <Tag class="w-4 h-4" />
                       {{ bottle.tags.join(', ') }}
                     </div>
-
                   </div>
                 </div>
                 <div class="dialog-content">
                   <p class="bottle-details">{{ bottle.content.slice(0, 30) }}</p>
                 </div>
               </div>
-
             </div>
           </div>
         </div>
 
-
-
         <!-- new windows -->
         <div v-if="showForm" class="form-modal">
           <div class="form-box2">
-
             <h3 class="text-lg font-bold mb-3">New Bottle</h3>
-
             <textarea v-model="bottleContent" placeholder="Write your message..." class="input mb-2"></textarea>
             <!-- taginpuit -->
             <div class="tag-input mb-2">
@@ -103,7 +81,7 @@
             </div>
             <input v-model="location" placeholder="Enter location" class="input mb-4" :readonly="isAutoDetected" />
 
-            <!-- Sichtbarkeitsdauer der Bottle -->
+            <!-- Visibility of bottle -->
             <label class="block mb-1 text-sm font-medium">Visible for:</label>
             <select v-model="ttlMinutes" class="input mb-2">
               <option :value="30">30 minutes</option>
@@ -117,26 +95,19 @@
               <input type="range" v-model="visibilityKm" min="1" max="10" step="1"
                 class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
             </div>
-             <!-- Limit readers -->
+            <!-- Limit readers -->
             <label class="block mb-1 text-sm font-medium">Limit readers (optional):</label>
-  <input
-  type="number"
-  v-model.number="maxReaders"
-  min="1"
-  placeholder="e.g. 3"
-  class="input mb-4"
-  :class="{ 'border-red-500': maxReaders === 0 }"
-/>
-<p v-if="maxReaders === 0" class="text-red-500 text-sm mt-1">
-  ⚠️ The minimal number of readers is 1. Please insert valid value.
-</p>
+            <input type="number" v-model.number="maxReaders" min="1" placeholder="e.g. 3" class="input mb-4"
+              :class="{ 'border-red-500': maxReaders === 0 }" />
+            <p v-if="maxReaders === 0" class="text-red-500 text-sm mt-1">
+              ⚠️ The minimal number of readers is 1. Please insert valid value.
+            </p>
             <div class="flex justify-end space-x-2">
               <button class="btn-cancel" @click="showForm = false">Cancel</button>
               <button class="btn-submit" @click="submitBottle(loadNearbyBottles)">Send</button>
             </div>
           </div>
         </div>
-
         <div v-if="showSuccessModal" class="modal-overlay">
           <div class="modal">
             <h2 class="text-lg font-semibold mb-4">📦 Bottle thrown successfully!</h2>
@@ -146,28 +117,17 @@
         </div>
 
         <!-- Chat List Modal -->
-
         <div v-if="showChatModal" class="form-modal">
           <div class="form-box">
-
-
             <div class="form-header">
               <MessageSquareMore class="w-5 h-5" />
               Chat
               <button @click="showChatModal = false" class="text-xl absolute right-4">✕</button>
             </div>
-
-
             <div class="form-content">
-
-
-              <div class="form-left">
-
-                <button @click="openConversation(chat.conversation_id)" class="chat-button" v-for="chat in chatList"
+               <div class="form-left">
+                 <button @click="openConversation(chat.conversation_id)" class="chat-button" v-for="chat in chatList"
                   :key="chat.conversation_id">
-
-
-
                   <div class="chat-info-wrapper">
                     <p v-if="chat.first_message" class="chat-info-text">
                       {{chat.participants.map(p => p.nickname).join(', ')}}<br>
@@ -178,21 +138,15 @@
                   <p class="chat-preview">
                     {{ chat.bottle_sender?.nickname || chat.bottle_sender?.user_id || 'Unknown' }}: {{ chat.preview }}
                   </p>
-
                 </button>
               </div>
 
               <!-- .form-right -->
               <div class="form-right" v-if="showChatDetailModal">
-
                 <div class="form-right-header">
-
                   <Handshake class="w-5 h-5" />
-
                 </div>
-
                 <div class="form-right-content" ref="chatMessagesRef">
-
                   <div v-for="msg in messageList" :key="msg.timestamp" :class="[
                     'chat-message',
                     String(msg.sender_id) === String(getUserId()) ? 'self-message' : 'other-message'
@@ -202,10 +156,7 @@
                       <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
                     </div>
                   </div>
-
-
-                </div>
-
+                 </div>
                 <div class="form-right-reply">
                   <div class="form-right-reply-blank">
                     <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
@@ -215,14 +166,9 @@
                   </div>
                 </div>
               </div>
-
-
-            </div>
+             </div>
           </div>
         </div>
-
-
-
 
         <!-- All Bottle Detail Modal -->
         <div v-if="allDetailVisible" class="dialog-overlay">
@@ -241,18 +187,20 @@
               </div>
 
               <!-- Reply Button -->
-               <!-- Fall 1: Reply-Feld noch nicht offen -->
+              <!-- Fall 1: Reply-Feld not open yet -->
               <div class="dialog-reply mt-4">
                 <div v-if="!showReplyInput" class="flex justify-end">
-                 <button class="btn-submit" @click="toggleReplyBox(selectedAllBottle?.bottle_id)" 
-                 :disabled="selectedAllBottle?.max_readers > 0 && selectedAllBottle?.readers_count >= selectedAllBottle?.max_readers">Reply </button>
-                 <div v-if="selectedAllBottle?.max_readers > 0 && selectedAllBottle?.readers_count >= selectedAllBottle?.max_readers"
-                   class="text-red-500 text-sm mt-2">
-                   Limit reached: no more replies allowed.
+                  <button class="btn-submit" @click="toggleReplyBox(selectedAllBottle?.bottle_id)"
+                    :disabled="selectedAllBottle?.max_readers > 0 && selectedAllBottle?.readers_count >= selectedAllBottle?.max_readers">Reply
+                  </button>
+                  <div
+                    v-if="selectedAllBottle?.max_readers > 0 && selectedAllBottle?.readers_count >= selectedAllBottle?.max_readers"
+                    class="text-red-500 text-sm mt-2">
+                    Limit reached: no more replies allowed.
                   </div>
                 </div>
-                <!-- Fall 2: Reply-Feld offen -->
-                <div v-else>  
+                <!-- Fall 2: Reply-Feld open -->
+                <div v-else>
                   <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
                   <div class="flex justify-end mt-2 space-x-2">
                     <button class="btn-cancel" @click="cancelReply">Cancel</button>
@@ -348,7 +296,7 @@
             <div class="chat-info-wrapper">
               <p class="dialog-tags">
                 <CalendarFold class="w-4 h-4" />
-                {{ new Date(new Date(bottle.timestamp).getTime()).toLocaleString() }}
+                {{ formatDate(bottle.timestamp) }}
               </p>
 
               <div class="dialog-tags">
@@ -383,7 +331,7 @@
         </div>
         <input v-model="location" placeholder="Enter location" class="input mb-4" :readonly="isAutoDetected" />
 
-        <!-- Sichtbarkeitsdauer der Bottle -->
+        <!-- Visibility time of bottle -->
         <label class="block mb-1 text-sm font-medium">Visible for:</label>
         <select v-model="ttlMinutes" class="input mb-2">
           <option :value="30">30 minutes</option>
@@ -399,18 +347,12 @@
         </div>
         <!-- Limit readers -->
         <label class="block mb-1 text-sm font-medium">Limit readers (optional):</label>
-          <input
-  type="number"
-  v-model.number="maxReaders"
-  min="1"
-  placeholder="e.g. 3"
-  class="input mb-4"
-  :class="{ 'border-red-500': maxReaders === 0 }"
-/>
-<p v-if="maxReaders === 0" class="text-red-500 text-sm mt-1">
-  ⚠️ The minimal number of readers is 1. Please insert valid value.
-</p> 
-<div class="flex justify-end space-x-2">
+        <input type="number" v-model.number="maxReaders" min="1" placeholder="e.g. 3" class="input mb-4"
+          :class="{ 'border-red-500': maxReaders === 0 }" />
+        <p v-if="maxReaders === 0" class="text-red-500 text-sm mt-1">
+          ⚠️ The minimal number of readers is 1. Please insert valid value.
+        </p>
+        <div class="flex justify-end space-x-2">
           <button class="btn-cancel" @click="showForm = false">Cancel</button>
           <button class="btn-submit" @click="submitBottle(loadNearbyBottles)">Send</button>
         </div>
@@ -425,25 +367,16 @@
     </div>
     <div v-if="showChatModal" class="form-modal">
       <div class="form-box">
-
-
         <div class="form-header">
           <MessageSquareMore class="w-5 h-5" />
           Chat
           <button @click="showChatModal = false" class="text-xl absolute right-4">✕</button>
         </div>
-
-
         <div class="form-content">
-
-
           <div class="form-left">
 
             <button @click="openConversation(chat.conversation_id)" class="chat-button" v-for="chat in chatList"
               :key="chat.conversation_id">
-
-
-
               <div class="chat-info-wrapper">
                 <p v-if="chat.first_message" class="chat-info-text">
                   {{chat.participants.map(p => p.nickname).join(', ')}}<br>
@@ -509,22 +442,19 @@
           </div>
 
           <!-- Reply Button -->
-           <!-- Fall 1: Reply-Feld noch nicht offen -->
+          <!-- Fall 1: Reply-Feld not open yet -->
           <div class="dialog-reply mt-4">
             <div v-if="!showReplyInput" class="flex justify-end">
-<button class="btn-submit"
-            @click="toggleReplyBox(selectedAllBottle?.bottle_id)"
-            :disabled="selectedAllBottle?.max_readers > 0 &&
-                       selectedAllBottle?.readers_count >= selectedAllBottle?.max_readers">
-      Reply
-    </button>
-    <div v-if="selectedAllBottle?.max_readers > 0 &&
-               selectedAllBottle?.readers_count >= selectedAllBottle?.max_readers"
-         class="text-red-500 text-sm mt-2">
-      Limit reached: no more replies allowed.
-    </div>
-  </div>
-               <!-- Fall 2: Reply-Feld offen -->
+              <button class="btn-submit" @click="toggleReplyBox(selectedAllBottle?.bottle_id)" :disabled="selectedAllBottle?.max_readers > 0 &&
+                selectedAllBottle?.readers_count >= selectedAllBottle?.max_readers">
+                Reply
+              </button>
+              <div v-if="selectedAllBottle?.max_readers > 0 &&
+                selectedAllBottle?.readers_count >= selectedAllBottle?.max_readers" class="text-red-500 text-sm mt-2">
+                Limit reached: no more replies allowed.
+              </div>
+            </div>
+            <!-- Fall 2: Reply-Feld open -->
             <div v-else>
               <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
               <div class="flex justify-end mt-2 space-x-2">
@@ -585,7 +515,7 @@
         </div>
         <input v-model="location" placeholder="Enter location" class="input mb-4" :readonly="isAutoDetected" />
 
-        <!-- Sichtbarkeitsdauer der Bottle -->
+        <!-- Visibility time of bottle -->
         <label class="block mb-1 text-sm font-medium">Visible for:</label>
         <select v-model="ttlMinutes" class="input mb-2">
           <option :value="30">30 minutes</option>
@@ -616,18 +546,10 @@
           Chat
           <button @click="showChatModal = false" class="text-xl absolute right-4">✕</button>
         </div>
-
-
         <div class="form-content">
-
-
           <div class="form-left">
-
             <button @click="openConversation(chat.conversation_id)" class="chat-button" v-for="chat in chatList"
               :key="chat.conversation_id">
-
-
-
               <div class="chat-info-wrapper">
                 <p v-if="chat.first_message" class="chat-info-text">
                   {{chat.participants.map(p => p.nickname).join(', ')}}<br>
@@ -663,10 +585,7 @@
                   <p><strong>{{ msg.sender_nickname }}:</strong> {{ msg.content }}</p>
                 </div>
               </div>
-
-
             </div>
-
             <div class="form-right-reply">
               <div class="form-right-reply-blank">
                 <textarea v-model="replyContent" class="reply-input" placeholder="Write a reply..."></textarea>
@@ -676,9 +595,7 @@
               </div>
             </div>
           </div>
-
-
-        </div>
+         </div>
       </div>
     </div>
   </div>
@@ -692,15 +609,13 @@ import axios from 'axios'
 import markerIcon2x from '../assets/leaflet/marker-icon-2x.png'
 import markerIcon from '../assets/leaflet/marker-icon.png'
 import markerShadow from '../assets/leaflet/marker-shadow.png'
-import { Send, BookOpen, UserCircle, MessageSquareMore, Mails, Bird, Tag, CalendarFold, Handshake, Waves } from 'lucide-vue-next'
+import { Send, UserCircle, MessageSquareMore, Mails, Tag, CalendarFold, Handshake, Waves } from 'lucide-vue-next'
 import { watch } from 'vue'
 import * as turf from '@turf/turf'
 import bottleIconUrl from '../assets/leaflet/bottle.png'  //from https://www.flaticon.com/de/kostenloses-icon/flaschenpost_6829994?related_id=6829994&origin=search
 
 
 function handleSendReply() {
-
-  console.log('▶️ handleSendReply aufgerufen')
   sendReply2(chatMessagesRef).then(() => {
     loadNearbyBottles()
     loadChatList()
@@ -711,8 +626,8 @@ function handleSendReply() {
 const bottleIcon = L.icon({
   iconUrl: bottleIconUrl,
   iconSize: [32, 32],         // 32x32 Pixel
-  iconAnchor: [16, 32],       // Mittelpunkt unten
-  popupAnchor: [0, -32]       // Popup-Position
+  iconAnchor: [16, 32],       // center part down
+  popupAnchor: [0, -32]       // Popup position
 })
 
 const API_BASE =
@@ -723,9 +638,7 @@ const isAutoDetected = ref(false)
 const showMyBottleModal = ref(false)
 const chatMessagesRef = ref(null)
 
-// ---------------------------------------------
-// Hilfs‐Array, damit wir alte Marker löschen
-// ---------------------------------------------
+// to delete old bottles on map
 const allBottleMarkers = []
 const userLat = ref(null)
 const userLon = ref(null)
@@ -742,17 +655,14 @@ import {
   handleTagKeydown,
   prepareThrowForm,
   showSuccessModal,
-  openBottle, 
-  maxReaders, 
+  openBottle,
+  maxReaders,
   visibilityKm,
   ttlMinutes
 } from './throwBottleLogic.js'
 
 import {
   myBottles,
-  dropdownOpen,
-  toggleDropdown,
-  viewBottleDetail,
   detailVisible,
   selectedBottle,
   closeDetailModal,
@@ -774,12 +684,11 @@ import {
 
 onMounted(() => {
   loadChatList();
-  
+
   window.addEventListener('refresh-bottles', loadNearbyBottles);
 });
 
 onUnmounted(() => {
-  // Sauber wieder entfernen
   window.removeEventListener('refresh-bottles', loadNearbyBottles);
 });
 
@@ -790,7 +699,7 @@ import {
   cancelReply,
   sendReply2,
   sendReply,
-  showReplySuccessModal, 
+  showReplySuccessModal,
   getUserId
 } from './replyLogic.js'
 
@@ -804,23 +713,16 @@ const {
   showChatModal,
   showChatDetailModal,
   chatList,
-  selectedConversation,
   messageList,
   loadChatList,
   openConversation,
   formatDate,
-  //userId,
-  currentBottleId
 } = useChatLogic(chatMessagesRef)
 
 onMounted(() => {
   loadChatList()
 })
 
-const getReceiverId = () => {
-  const conv = chatList.value.find(c => c.conversation_id === selectedConversation.value)
-  return conv?.participants.find(p => p !== userId)
-}
 
 onMounted(async () => {
   await nextTick()
@@ -831,28 +733,28 @@ onMounted(async () => {
     return
   }
 
-  
+
 
 
   // Initialize Leaflet map
-if (!mapInstance) {
-  mapInstance = L.map(mapContainer, {
-    minZoom: 2,
-    maxZoom: 24,     // OSM geht i. d. R. bis 19
-    zoomSnap: 0.5,   // ← halbe Zoomstufen erlauben (oder 0.25 für noch feiner)
-    zoomDelta: 1.0   // ← +/- Buttons springen in 0.5er-Schritten
-  }).setView([48.1351, 11.5820], 13.5) 
+  if (!mapInstance) {
+    mapInstance = L.map(mapContainer, {
+      minZoom: 2,
+      maxZoom: 24,     // OSM geht i. d. R. bis 19
+      zoomSnap: 0.5,   // ← halbe Zoomstufen erlauben (oder 0.25 für noch feiner)
+      zoomDelta: 1.0   // ← +/- Buttons springen in 0.5er-Schritten
+    }).setView([48.1351, 11.5820], 13.5)
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
-    maxZoom: 24,
-    detectRetina: true
-  }).addTo(mapInstance)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 24,
+      detectRetina: true
+    }).addTo(mapInstance)
 
-  map.value = mapInstance
-} else {
-  console.warn('⚠️ Map is already initialized')
-}
+    map.value = mapInstance
+  } else {
+    console.warn('⚠️ Map is already initialized')
+  }
 
   // Ensure tiles render after layout
   setTimeout(() => {
@@ -885,11 +787,10 @@ if (!mapInstance) {
   const queryLat = query.get('lat')
   const queryLon = query.get('lon')
   const msg = query.get('msg')
-  const storedCoords = localStorage.getItem('coords' || '{}') 
 
   if (queryLat && queryLon && msg) {
     const marker = L.marker([parseFloat(queryLat), parseFloat(queryLon)])
-      .addTo(map.value)
+      .addTo(mapInstance)
       .bindPopup(`<strong>📦 New Bottle:</strong><br/>${msg}`)
       .openPopup()
 
@@ -917,18 +818,18 @@ if (!mapInstance) {
         .bindPopup('📍 Your Location')
         .openPopup()
 
-const R_EARTH = 6371000
-function destination(lat, lon, distanceM, bearingDeg) {
-  const δ = distanceM / R_EARTH, θ = bearingDeg * Math.PI/180
-  const φ1 = lat * Math.PI/180, λ1 = lon * Math.PI/180
-  const sinφ1 = Math.sin(φ1), cosφ1 = Math.cos(φ1)
-  const sinδ = Math.sin(δ), cosδ = Math.cos(δ)
-  const sinφ2 = sinφ1*cosδ + cosφ1*sinδ*Math.cos(θ)
-  const φ2 = Math.asin(sinφ2)
-  const y = Math.sin(θ)*sinδ*cosφ1, x = cosδ - sinφ1*sinφ2
-  const λ2 = λ1 + Math.atan2(y, x)
-  return [φ2*180/Math.PI, ((λ2*180/Math.PI + 540)%360) - 180]
-}
+      const R_EARTH = 6371000
+      function destination(lat, lon, distanceM, bearingDeg) {
+        const δ = distanceM / R_EARTH, θ = bearingDeg * Math.PI / 180
+        const φ1 = lat * Math.PI / 180, λ1 = lon * Math.PI / 180
+        const sinφ1 = Math.sin(φ1), cosφ1 = Math.cos(φ1)
+        const sinδ = Math.sin(δ), cosδ = Math.cos(δ)
+        const sinφ2 = sinφ1 * cosδ + cosφ1 * sinδ * Math.cos(θ)
+        const φ2 = Math.asin(sinφ2)
+        const y = Math.sin(θ) * sinδ * cosφ1, x = cosδ - sinφ1 * sinφ2
+        const λ2 = λ1 + Math.atan2(y, x)
+        return [φ2 * 180 / Math.PI, ((λ2 * 180 / Math.PI + 540) % 360) - 180]
+      }
 
 
       // Inner circle (5km)
@@ -941,30 +842,31 @@ function destination(lat, lon, distanceM, bearingDeg) {
       }).addTo(mapInstance)
 
       const center = whiteCircle.getLatLng()
-const radiusM = whiteCircle.getRadius()
-const radiusKm = Math.round(radiusM / 1000)
+      const radiusM = whiteCircle.getRadius()
+      const radiusKm = Math.round(radiusM / 1000)
 
-// 5km Label
-const [lblLat, lblLon] = destination(center.lat, center.lng, radiusM * 1.02, 0)
+      // 5km Label
+      const [lblLat, lblLon] = destination(center.lat, center.lng, radiusM * 1.02, 0)
 
-L.marker([lblLat, lblLon], {
-  icon: L.divIcon({
-    className: 'radius-label',
-    html: `<div class="radius-chip">${radiusKm} km</div>`,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0]
-  }),
-  interactive: false
-}).addTo(mapInstance)
+      L.marker([lblLat, lblLon], {
+        icon: L.divIcon({
+          className: 'radius-label',
+          html: `<div class="radius-chip">${radiusKm} km</div>`,
+          iconSize: [0, 0],
+          iconAnchor: [0, 0]
+        }),
+        interactive: false
+      }).addTo(mapInstance)
 
-//center view after login / change
-setTimeout(() => {
-  mapInstance.invalidateSize(); 
-  mapInstance.fitBounds(whiteCircle.getBounds(), {
-    padding: [40, 40] })
-    const targetZoom = 13.5    
-    mapInstance.setView(whiteCircle.getLatLng(), targetZoom)          
-  });
+      //center view after login / change
+      setTimeout(() => {
+        mapInstance.invalidateSize();
+        mapInstance.fitBounds(whiteCircle.getBounds(), {
+          padding: [40, 40]
+        })
+        const targetZoom = 13.5
+        mapInstance.setView(whiteCircle.getLatLng(), targetZoom)
+      });
 
       // World polygon
       const world = turf.polygon([
@@ -1020,7 +922,6 @@ watch(isMobile, async () => {
   setTimeout(() => {
     const el = document.getElementById('map')
     if (mapInstance && el?.offsetHeight > 0) {
-      console.log('✅ Forcing Leaflet resize')
       mapInstance.invalidateSize()
     } else {
       console.warn('❌ Map not visible or not initialized yet')
@@ -1031,7 +932,6 @@ watch(isMobile, async () => {
 
 const map = ref(null)
 let mapInstance = null
-let markers = []
 
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
@@ -1050,7 +950,7 @@ function goToMap() {
 
   if (lat && lon && mapInstance) {
     const coords = [parseFloat(lat), parseFloat(lon)]
-    mapInstance.setView(coords, 16) // ⬅️ Zoom-Level auf Standort
+    mapInstance.setView(coords, 16) 
 
     // Marker mit "New Bottle"
     L.marker(coords).addTo(mapInstance).bindPopup('📦 New Bottle').openPopup()
@@ -1059,19 +959,16 @@ function goToMap() {
 
 
 
-// ---------------------------------------------
-// 2)   Auf Änderungen reagieren
-// ---------------------------------------------
+//react on changes
 watch(
   allBottles,
   bottles => {
-    if (!mapInstance) return          // Karte noch nicht da?
-
-    /* alte Marker entfernen */
+    if (!mapInstance) return          
+    /* delete old marker */
     allBottleMarkers.forEach(m => mapInstance.removeLayer(m))
     allBottleMarkers.length = 0
 
-    /* neue Marker zeichnen */
+    /* draw new markers */
     bottles.forEach(b => {
       const loc = b.location || {}
       if (!('lat' in loc && 'lon' in loc)) return
@@ -1088,8 +985,6 @@ watch(
       <button onclick="window.replyToBottle('${b.bottle_id}')" style="margin-top: 6px; padding: 4px 8px; font-size: 13px; border-radius: 4px; background: #eee; border: 1px solid #ccc;">💬 Reply</button>
     </div>
   `)
-
-
       allBottleMarkers.push(marker)
     })
   },
@@ -1106,27 +1001,19 @@ window.replyToBottle = (bottleId) => {
 
 }
 
-
-window.tryOpen = id => {
-  const bottle = allBottles.value.find(b => b.bottle_id === id)
-  if (bottle) {
-    openBottle(bottle, toggleReplyBox)   // Callback öffnet Modal
-  }
-}
-
 async function loadNearbyBottles() {
   if (userLat.value == null || userLon.value == null) return
   const res = await axios.get(
     `${API_BASE}/nearby_bottles`,
     { params: { lat: userLat.value, lon: userLon.value, radius: 10000 } }
   )
-  allBottles.value = res.data.bottles       
+  allBottles.value = res.data.bottles
 }
 
 
 
 function goToMapReply() {
-  showReplySuccessModal.value = false  // Modal schließen
+  showReplySuccessModal.value = false  
   // Aktuelles Bottle-Ort holen
   const bottle = selectedAllBottle.value
   const loc = bottle?.location
@@ -1213,7 +1100,6 @@ body,
   height: 1.5rem;
 }
 
-
 .mobile-button-bar button {
   flex: 1;
   padding: 6px 0;
@@ -1222,7 +1108,6 @@ body,
   align-items: center;
   justify-content: center;
   font-size: 0.75rem;
-  /* text-xs */
   gap: 2px;
   border: none;
   background: white;
@@ -1230,9 +1115,7 @@ body,
 
 .mobile-button-bar svg {
   width: 1.5rem;
-  /* Tailwind w-6 */
   height: 1.5rem;
-  /* Tailwind h-6 */
 }
 
 .sidebar {
@@ -1293,7 +1176,7 @@ body,
   background-color: #97999b;
 }
 
-form-modal {
+.form-modal {
   position: fixed;
   top: 0;
   left: 0;
@@ -1321,26 +1204,15 @@ form-modal {
   flex-direction: column;
 }
 
-
-
 .form-box2 {
-
   background: rgb(253, 253, 253);
-
   padding: 0 1.5rem 1.5rem;
-
   border-radius: 1rem;
-
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-
   width: 90%;
-
   max-width: 400px;
-
   max-height: 550px;
-
   overflow-y: auto;
-
   color: black
 }
 
@@ -1671,11 +1543,8 @@ h3 {
 }
 
 /*thrownsuccessmodal*/
-
-
 .modal {
   background-color: white;
-  /* ❗ weißer Hintergrund */
   color: black;
   padding: 2rem;
   border-radius: 8px;
@@ -1684,9 +1553,6 @@ h3 {
   width: 90%;
   text-align: center;
 }
-
-
-
 
 
 .chat-popup {
@@ -1700,32 +1566,6 @@ h3 {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
-
-
-.dialog-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.dialog-box {
-  background-color: rgb(228, 226, 226);
-  border-radius: 1rem;
-  padding: 1.5rem;
-  width: 90%;
-  max-width: 420px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-  position: relative;
-  margin: auto;
-
-}
 
 .chat-preview {
   font-size: 0.875rem;
@@ -1906,6 +1746,7 @@ h3 {
   .chat-preview {
     font-size: 0.75rem;
   }
+
   .mobile-back-btn {
     background: none;
     border: none;
@@ -1935,26 +1776,28 @@ h3 {
 :deep(.radius-label.leaflet-div-icon) {
   background: transparent !important;
   border: 0 !important;
-  width: 0 !important;     
+  width: 0 !important;
   height: 0 !important;
   box-shadow: none !important;
 }
+
 :deep(.radius-chip) {
-  background: transparent !important; 
+  background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
   padding: 0 !important;
   border-radius: 0 !important;
   color: #111827;
   font-size: 30px;
-  white-space: nowrap; 
+  white-space: nowrap;
   font-weight: 600;
   transform: translate(100px, -40px);
 }
+
 @media (max-width: 768px) {
   :deep(.radius-chip) {
-    font-size: 20px;           
-    transform: translate(60px, -24px); 
+    font-size: 20px;
+    transform: translate(60px, -24px);
   }
 }
 </style>
